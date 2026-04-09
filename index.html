@@ -73,14 +73,14 @@
     .yn-row { display: grid; gap: 12px; }
     .yn-row.two { grid-template-columns: 1fr 1fr; }
     .yn-row.three { grid-template-columns: 1fr 1fr 1fr; }
-    .yn-btn { padding: 16px 8px; border-radius: 12px; border: 2px solid var(--border); background: #ffffff; color: var(--text); font-size: 17px; font-weight: 800; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .yn-btn { padding: 16px 8px; border-radius: 12px; border: none; color: #ffffff; font-size: 17px; font-weight: 800; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .yn-btn:active { transform: scale(0.97); }
-    .yn-btn.yes { border-color: var(--green); }
-    .yn-btn.yes.selected, .yn-btn.yes:hover { background: var(--green); border-color: var(--green); }
-    .yn-btn.no { border-color: var(--red); }
-    .yn-btn.no.selected, .yn-btn.no:hover { background: var(--red); border-color: var(--red); }
-    .yn-btn.na { border-color: var(--muted); }
-    .yn-btn.na.selected, .yn-btn.na:hover { background: #475569; border-color: #475569; }
+    .yn-btn.yes { background: var(--green); }
+    .yn-btn.yes:hover { background: #15803d; }
+    .yn-btn.no { background: #dc2626; }
+    .yn-btn.no:hover { background: #b91c1c; }
+    .yn-btn.na { background: #6b7280; }
+    .yn-btn.na:hover { background: #4b5563; }
 
     /* MULTI-CHOICE BUTTONS */
     .choice-row { display: flex; gap: 10px; flex-wrap: wrap; }
