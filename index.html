@@ -780,10 +780,11 @@ function pdfHeader(doc, title) {
     if (siteDetails.logo) {
       try {
         // Preserve aspect ratio — fit within max 50mm wide, 18mm tall
-        const img = new Image();
-        await new Promise(res => { img.onload = res; img.src = siteDetails.logo; });
+        // Use stored natural dimensions if available, else default to square
+        const _logoImg = document.createElement('img');
+        _logoImg.src = siteDetails.logo;
         const maxW = 50, maxH = 18;
-        const ratio = img.naturalWidth / img.naturalHeight;
+        const ratio = (_logoImg.naturalWidth && _logoImg.naturalHeight) ? _logoImg.naturalWidth / _logoImg.naturalHeight : 2;
         let w = maxW, h = maxW / ratio;
         if (h > maxH) { h = maxH; w = maxH * ratio; }
         const fmt = siteDetails.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
