@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="JobRAEF" />
+  <title>JobRAEF</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red: #374151; --dark: #ffffff; --mid: #f0f0f0; --card: #f3f3f3;
+      --border: #e0e0e0; --text: #111111; --muted: #555555;
+      --green: #16a34a; --blue: #1d4ed8; --amber: #d97706;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #ffffff; color: var(--text); min-height: 100vh; display: flex; flex-direction: column; font-weight: 600; }
+
+    .header { background: var(--red); padding: 16px 20px 14px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+    .header-icon { display: none; }
+    .header h1 { font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: 0.5px; }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+
+    .progress-wrap { padding: 12px 20px 0; }
+    .progress-bar-bg { background: var(--border); border-radius: 99px; height: 6px; overflow: hidden; }
+    .progress-bar-fill { background: var(--red); height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+    .progress-label { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: right; }
+
+    .main { flex: 1; padding: 24px 20px 100px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* NAV BUTTONS */
+    .nav-row { display: flex; gap: 10px; padding: 10px 20px 0; }
+    .nav-btn { flex: 1; padding: 11px 8px; border-radius: 10px; border: 2px solid var(--border); background: #f3f3f3; color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; }
+    .nav-btn:active { background: #e5e5e5; }
+    .nav-btn.all-q { border-color: var(--red); color: var(--red); }
+
+    /* ALL QUESTIONS OVERLAY */
+    #all-q-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; }
+    #all-q-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 20px 20px 0 0; max-height: 80vh; overflow-y: auto; padding: 0 0 40px; }
+    .all-q-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 14px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 1; }
+    .all-q-header h3 { font-size: 16px; font-weight: 800; }
+    .all-q-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); line-height: 1; }
+    .all-q-item { display: flex; align-items: center; gap: 10px; padding: 13px 20px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+    .all-q-item:active { background: #f8f8f8; }
+    .all-q-num { font-size: 12px; font-weight: 800; color: var(--muted); min-width: 24px; }
+    .all-q-text { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; }
+    .all-q-tick { font-size: 16px; margin-left: 6px; }
+    .all-q-item.current-q { background: #fff5f5; border-left: 3px solid var(--red); }
+    .all-q-item.remedial-q .all-q-num { color: var(--amber); }
+
+    /* SITE SCREEN */
+    #site-screen { display: flex; flex-direction: column; }
+    .site-card { background: #f3f3f3; border: 1px solid var(--border); border-radius: 16px; padding: 22px 18px 18px; margin: 24px 20px 0; display: flex; flex-direction: column; gap: 14px; }
+    .site-card h2 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .site-card p { color: var(--muted); font-size: 14px; font-weight: 600; }
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-group label { font-size: 17px; font-weight: 800; color: #111111; text-transform: uppercase; letter-spacing: 0.4px; }
+    .draft-bar { background: #f3f3f3; border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: var(--muted); margin: 12px 20px 0; font-weight: 600; }
+    .logo-upload-btn { background: #f3f3f3; border: 2px dashed var(--border); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; color: var(--muted); font-size: 15px; font-weight: 700; transition: border-color 0.15s; }
+    .logo-upload-btn:hover { border-color: #374151; color: var(--text); }
+    .draft-bar button { background: var(--red); border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; padding: 7px 14px; cursor: pointer; }
+
+    /* QUESTION CARD */
+    .q-card { background: #f3f3f3; border: 1px solid var(--border); border-radius: 16px; padding: 22px 18px 18px; animation: fadeUp 0.25s ease; }
+    .q-card.remedial { border-color: var(--amber); border-width: 2px; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .q-label { font-size: 13px; font-weight: 800; color: var(--red); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+    .q-label.remedial-label { color: var(--amber); }
+    .q-text { font-size: 20px; line-height: 1.45; color: var(--text); margin-bottom: 22px; font-weight: 700; }
+
+    /* YES/NO/NA BUTTONS */
+    .yn-row { display: grid; gap: 12px; }
+    .yn-row.two { grid-template-columns: 1fr 1fr; }
+    .yn-row.three { grid-template-columns: 1fr 1fr 1fr; }
+    .yn-btn { padding: 16px 8px; border-radius: 12px; border: 2px solid var(--border); background: #ffffff; color: var(--text); font-size: 17px; font-weight: 800; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .yn-btn:active { transform: scale(0.97); }
+    .yn-btn.yes { border-color: var(--green); }
+    .yn-btn.yes.selected, .yn-btn.yes:hover { background: var(--green); border-color: var(--green); }
+    .yn-btn.no { border-color: var(--red); }
+    .yn-btn.no.selected, .yn-btn.no:hover { background: var(--red); border-color: var(--red); }
+    .yn-btn.na { border-color: var(--muted); }
+    .yn-btn.na.selected, .yn-btn.na:hover { background: #475569; border-color: #475569; }
+
+    /* MULTI-CHOICE BUTTONS */
+    .choice-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .choice-btn { flex: 1; min-width: 60px; padding: 16px 8px; border-radius: 12px; border: 2px solid var(--border); background: #ffffff; color: var(--text); font-size: 17px; font-weight: 800; cursor: pointer; transition: all 0.15s; text-align: center; }
+    .choice-btn:active { transform: scale(0.97); }
+    .choice-btn.selected { background: var(--blue); border-color: var(--blue); }
+
+    .field-input { width: 100%; background: #f3f3f3; border: 2px solid var(--border); border-radius: 12px; color: var(--text); font-size: 17px; padding: 14px 16px; outline: none; resize: none; transition: border-color 0.15s; font-family: inherit; font-weight: 600; }
+    .field-input:focus { border-color: var(--red); }
+    .field-input::placeholder { color: var(--muted); font-weight: 500; }
+    input[type="date"].field-input { color-scheme: light; }
+
+    .photo-area { display: flex; flex-direction: column; gap: 12px; }
+    .photo-btn { background: #f3f3f3; border: 2px dashed var(--border); border-radius: 12px; color: var(--muted); font-size: 15px; padding: 18px; cursor: pointer; text-align: center; transition: border-color 0.15s; font-weight: 700; }
+    .photo-btn:hover { border-color: var(--red); color: var(--text); }
+    .photo-previews { display: flex; flex-wrap: wrap; gap: 8px; }
+    .photo-thumb { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; border: 2px solid var(--border); }
+    #photo-input { display: none; }
+
+    .sig-wrap { border: 2px solid var(--border); border-radius: 12px; overflow: hidden; background: #fff; }
+    .sig-canvas { display: block; width: 100%; touch-action: none; cursor: crosshair; }
+    .sig-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .sig-clear { background: #f3f3f3; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; font-weight: 700; }
+
+    .next-btn { width: 100%; padding: 18px; background: var(--red); border: none; border-radius: 14px; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+    .next-btn:active { transform: scale(0.98); }
+    .skip-btn { background: transparent; border: none; color: var(--muted); font-size: 14px; cursor: pointer; text-align: center; padding: 6px; text-decoration: underline; width: 100%; display: block; }
+    .save-draft-btn { background: #f3f3f3; border: 1px solid var(--border); color: var(--muted); font-size: 14px; cursor: pointer; text-align: center; padding: 10px; border-radius: 10px; width: 100%; display: block; font-weight: 700; }
+
+    /* SUMMARY */
+    #summary-screen { display: none; flex-direction: column; gap: 14px; padding: 24px 20px 40px; }
+    .summary-header { text-align: center; padding: 20px 0 10px; }
+    .summary-header .tick { font-size: 56px; }
+    .summary-header h2 { font-size: 22px; font-weight: 700; margin-top: 10px; }
+    .summary-header p { color: var(--muted); margin-top: 6px; font-size: 14px; }
+    .summary-item { background: #f3f3f3; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .summary-item.remedial-item { border-color: var(--amber); }
+    .summary-item .s-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; font-weight: 700; }
+    .summary-item .s-value { font-size: 15px; word-break: break-word; font-weight: 600; }
+    .export-btn { width: 100%; padding: 18px; background: var(--green); border: none; border-radius: 14px; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; }
+    .remedial-btn { width: 100%; padding: 18px; background: var(--amber); border: none; border-radius: 14px; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; }
+    .email-btn { width: 100%; padding: 18px; background: var(--blue); border: none; border-radius: 14px; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; }
+    .restart-btn { width: 100%; padding: 16px; background: transparent; border: 2px solid var(--border); border-radius: 14px; color: var(--text); font-size: 16px; font-weight: 600; cursor: pointer; }
+    .section-divider { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 4px 0 2px; border-bottom: 1px solid var(--border); }
+    .section-divider.amber { color: var(--amber); border-color: var(--amber); }
+  </style>
+</head>
+<body>
+
+<!-- SITE DETAILS SCREEN -->
+<div id="site-screen">
+  <div class="header">
+    <div class="header-icon">🔥</div>
+    <div>
+      <h1>JobRAEF</h1>
+      <div class="header-sub">Fire PPM — Site Details</div>
+    </div>
+  </div>
+
+  <div id="draft-bar-wrap" style="display:none;">
+    <div class="draft-bar">
+      <span>📋 Draft saved — resume where you left off?</span>
+      <button onclick="loadDraft()">Resume</button>
+    </div>
+  </div>
+
+  <div class="site-card">
+    <div>
+      <h2>Before you start</h2>
+      <p>Enter the site details for this service visit.</p>
+    </div>
+    <div class="field-group">
+      <label>Site / Customer Name</label>
+      <input class="field-input" id="sd-site-name" type="text" placeholder="e.g. Morrisons Wakefield" />
+    </div>
+    <div class="field-group">
+      <label>Site Address</label>
+      <textarea class="field-input" id="sd-address" rows="3" placeholder="Full address including postcode"></textarea>
+    </div>
+    <div class="field-group">
+      <label>Site Contact Name</label>
+      <input class="field-input" id="sd-contact" type="text" placeholder="e.g. Jane Smith" />
+    </div>
+    <div class="field-group">
+      <label>Site Contact Number</label>
+      <input class="field-input" id="sd-phone" type="tel" placeholder="e.g. 07700 900000" />
+    </div>
+    <div class="field-group">
+      <label>Engineer Name</label>
+      <input class="field-input" id="sd-engineer" type="text" placeholder="Your name" />
+    </div>
+    <div class="field-group">
+      <label>Job Reference</label>
+      <input class="field-input" id="sd-jobref" type="text" placeholder="e.g. JOB-00123" />
+    </div>
+    <div class="field-group">
+      <label>Service Date</label>
+      <input class="field-input" id="sd-date" type="date" />
+    </div>
+    <div class="field-group">
+      <label>Alarm Company Name</label>
+      <input class="field-input" id="sd-company" type="text" placeholder="e.g. Voca Fire & Security" />
+    </div>
+    <div class="field-group">
+      <label>Company Logo (optional)</label>
+      <div class="logo-upload-btn" id="logo-upload-btn" onclick="document.getElementById('logo-input').click()">
+        <span id="logo-upload-label">📁 Upload from camera roll</span>
+      </div>
+      <img id="logo-preview" src="" style="display:none; max-height:60px; max-width:200px; margin-top:8px; border-radius:8px; object-fit:contain;" />
+      <input type="file" id="logo-input" accept="image/*" style="display:none;" />
+    </div>
+  </div>
+  <div style="padding: 16px 20px 40px;">
+    <button class="next-btn" onclick="startService()">Start Service →</button>
+  </div>
+</div>
+
+<!-- MAIN QUESTION SCREEN -->
+<div id="app-screen" style="display:none; flex-direction:column; flex:1;">
+  <div class="header">
+    <div class="header-icon">🔥</div>
+    <div>
+      <h1>JobRAEF</h1>
+      <div class="header-sub" id="header-site-name">PPM Checklist</div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="progress-label" id="progress-label">1 of 41</div>
+  </div>
+  <div class="nav-row">
+    <button class="nav-btn" onclick="goBack()">← Previous</button>
+    <button class="nav-btn all-q" onclick="openAllQuestions()">☰ All Questions</button>
+  </div>
+  <div class="main" id="main-area"></div>
+</div>
+
+<!-- ALL QUESTIONS OVERLAY -->
+<div id="all-q-overlay" onclick="closeOverlayBg(event)">
+  <div id="all-q-sheet">
+    <div class="all-q-header">
+      <h3>All Questions</h3>
+      <button class="all-q-close" onclick="closeOverlay()">✕</button>
+    </div>
+    <div id="all-q-list"></div>
+  </div>
+</div>
+
+<!-- SUMMARY SCREEN -->
+<div id="summary-screen"></div>
+
+<input type="file" id="photo-input" accept="image/*" capture="environment" multiple />
+
+<script>
+const { jsPDF } = window.jspdf;
+const DRAFT_KEY = 'JobRAEF_draft';
+
+// Base questions
+const BASE_QUESTIONS = [
+  { id: 1,  label: "Date of Service",          text: "Date of service",                                                                                                   type: "date" },
+  { id: 2,  label: "Next Service Date",         text: "When is the next service visit due?",                                                                                                           type: "next_service" },
+  { id: 3,  label: "Logbook / Defects",         text: "Has the logbook been checked and any outstanding defects been resolved?",                                                                       type: "yn" },
+  { id: 4,  label: "Defects Document",          text: "Do you want to complete the defects document as you carry out the service?",                                                                    type: "yn", triggersRemedial: true },
+  { id: 5,  label: "Call Points Visible",       text: "Are all manual call points unobstructed and visible?",                                                                                         type: "yn" },
+  { id: 6,  label: "Exits – Call Points",       text: "Do all exits have a manual call point adjacent?",                                                                                              type: "yn" },
+  { id: 7,  label: "New Partitions",            text: "Are any new partitions within 500mm of a detector?",                                                                                           type: "yn" },
+  { id: 8,  label: "Storage Clearance",         text: "Does any storage encroach within 300mm of ceilings?",                                                                                          type: "yn" },
+  { id: 9,  label: "Detector Clearance",        text: "Is there a clear space of 500mm below each detector?",                                                                                         type: "yn" },
+  { id: 10, label: "Occupancy Changes",         text: "Are there any changes of occupancy or use of an area rendering the detection unsuitable or prone to false alarm?",                             type: "yn" },
+  { id: 11, label: "Cable Condition",           text: "Have cable fixings and cables been checked for any obvious signs of wear and tear or damage?",                                                 type: "yn" },
+  { id: 12, label: "False Alarm Records",       text: "Have the records been checked and any action required with regards to false alarms?",                                                           type: "yn" },
+  { id: 13, label: "Battery Condition",         text: "Have batteries and their connections been checked to ensure they are in good condition?",                                                       type: "yn" },
+  { id: 14, label: "Battery Voltage",           text: "Record the battery voltage (V).",                                                                                                             type: "number", placeholder: "e.g. 13.5" },
+  { id: 15, label: "Charge Voltage",            text: "Record the charge voltage (V).",                                                                                                              type: "number", placeholder: "e.g. 27.4" },
+  { id: 16, label: "Battery Load Test",         text: "Have batteries been disconnected and a battery load test completed?\n\nRecord results in comments — standby batteries must provide minimum 24h standby + 30 min full alarm.",  type: "yn", comments: true },
+  { id: 17, label: "Batteries >4 Years",        text: "Are there any batteries older than four years that require replacement?",                                                                       type: "yn" },
+  { id: 18, label: "Call Point Switches",       text: "Has the switch mechanism of every manual call point been tested?",                                                                             type: "yn" },
+  { id: 19, label: "Areas / Zones Tested",      text: "Which areas/zones have been tested?",                                                                                                         type: "text" },
+  { id: 20, label: "Detectors Tested",          text: "What percentage of automatic fire detectors have been tested and checked for correct operation?",                                               type: "choice", options: ["25%", "50%", "100%"] },
+  { id: 21, label: "Call Points Tested",        text: "What percentage of manual call points have been tested and checked for correct operation?",                                                    type: "choice", options: ["5%", "50%", "100%"] },
+  { id: 22, label: "ARC Signalling",            text: "Have you checked the operation of signalling to the ARC?",                                                                                    type: "yna" },
+  { id: 23, label: "CIE Buttons & Display",     text: "Have you checked the operation of all buttons and display at the CIE?",                                                                        type: "yn" },
+  { id: 24, label: "CIE Zonal Indicators",      text: "Do all fire alarm CIEs have zonal indicators?",                                                                                               type: "yn" },
+  { id: 25, label: "Cause & Effect",            text: "Has the cause and effect been checked and confirmed as correct?",                                                                              type: "yn" },
+  { id: 26, label: "Fault Indicators",          text: "Have all fault indicators and their circuits been checked (where practicable by simulation of a fault)?",                                      type: "yn" },
+  { id: 27, label: "Zone Plan Fitted",          text: "Is there a zone plan fitted?",                                                                                                                type: "yn" },
+  { id: 28, label: "Printers & Consumables",    text: "Have all printers and related consumables been checked to ensure they are sufficient to last until the next service visit?",                    type: "yna" },
+  { id: 29, label: "Analogue Values",           text: "Have the analogue values of addressable fire alarm devices been checked (if applicable)?",                                                     type: "yna" },
+  { id: 30, label: "Radio Systems",             text: "Have radio systems been checked as per manufacturer's recommendations?",                                                                        type: "yna" },
+  { id: 31, label: "Further Checks",            text: "Are there any further checks required as per manufacturer's recommendations?",                                                                 type: "yn" },
+  { id: 32, label: "Defects Reported",          text: "Have any defects been reported to the customer, logbook updated, and this checklist returned to the office for a service certificate?",        type: "yn" },
+  { id: 33, label: "PAVA System",               text: "Is there a PAVA system on site?",                                                                                                             type: "yn" },
+  { id: 34, label: "PAVA Faults",               text: "Are there any faults on the PAVA system?",                                                                                                   type: "yn" },
+  { id: 35, label: "PAVA Batteries Dated",      text: "Have the batteries been dated in the PAVA rack?",                                                                                             type: "yn" },
+  { id: 36, label: "Photo – PAVA Batteries",    text: "Take a photo of the PAVA batteries.",                                                                                                         type: "photo" },
+  { id: 37, label: "Photo – Fire Panel",        text: "Take a photo of the fire panel when the service is completed.",                                                                                type: "photo" },
+  { id: 38, label: "Logbook Completed",         text: "Have you completed the logbook of works carried out?",                                                                                         type: "yn" },
+  { id: 39, label: "Defects Identified",        text: "Have any defects or recommendations been identified on this service visit?",                                                                   type: "yn", triggersRemedial: true },
+  { id: 40, label: "Additional Notes",          text: "Any additional notes or observations for this service visit?",                                                                                 type: "text" },
+  { id: 41, label: "Engineer Signature",        text: "Please sign below to confirm this service has been completed.",                                                                                type: "signature", sigKey: "engineer" },
+  { id: 42, label: "Customer Signature",        text: "Customer name and signature to confirm the service visit.",                                                                                    type: "customer_sig" },
+];
+
+const REMEDIAL_QUESTIONS = [
+  { id: 43, label: "Works Required",   text: "Describe the works required.",      type: "text",   remedial: true },
+  { id: 44, label: "Parts Required",   text: "List any parts required.",          type: "text",   remedial: true },
+  { id: 45, label: "Hours Required",   text: "How many hours are required?",      type: "number", remedial: true, placeholder: "e.g. 2.5" },
+];
+
+let questions = [...BASE_QUESTIONS];
+let currentIndex = 0;
+let answers = {};
+let siteDetails = {};
+let remedialAdded = false;
+let photoInputTarget = null;
+let sigDrawing = false;
+let sigContexts = {};
+
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('sd-date').value = new Date().toISOString().split('T')[0];
+  if (localStorage.getItem(DRAFT_KEY)) {
+    document.getElementById('draft-bar-wrap').style.display = 'block';
+  }
+  // Logo upload handler
+  document.getElementById('logo-input').addEventListener('change', function(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      siteDetails.logo = ev.target.result;
+      const preview = document.getElementById('logo-preview');
+      preview.src = ev.target.result; preview.style.display = 'block';
+      document.getElementById('logo-upload-label').textContent = '✅ Logo uploaded';
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+function addRemedialIfNeeded() {
+  if (!remedialAdded) {
+    remedialAdded = true;
+    questions = [...BASE_QUESTIONS, ...REMEDIAL_QUESTIONS];
+  }
+}
+
+function saveDraft() {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({ siteDetails, answers, currentIndex, remedialAdded }));
+  alert('Draft saved! You can close the app and resume later.');
+}
+
+function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
+
+function loadDraft() {
+  const raw = localStorage.getItem(DRAFT_KEY);
+  if (!raw) return;
+  try {
+    const draft = JSON.parse(raw);
+    siteDetails = draft.siteDetails || {};
+    answers = draft.answers || {};
+    currentIndex = draft.currentIndex || 0;
+    remedialAdded = draft.remedialAdded || false;
+    if (remedialAdded) questions = [...BASE_QUESTIONS, ...REMEDIAL_QUESTIONS];
+    document.getElementById('draft-bar-wrap').style.display = 'none';
+    document.getElementById('site-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'flex';
+    if (siteDetails.siteName) document.getElementById('header-site-name').textContent = siteDetails.siteName;
+    renderQuestion();
+  } catch(e) { alert('Could not load draft.'); }
+}
+
+function startService() {
+  siteDetails = {
+    siteName: document.getElementById('sd-site-name').value.trim(),
+    address:  document.getElementById('sd-address').value.trim(),
+    contact:  document.getElementById('sd-contact').value.trim(),
+    phone:    document.getElementById('sd-phone').value.trim(),
+    engineer: document.getElementById('sd-engineer').value.trim(),
+    jobRef:   document.getElementById('sd-jobref').value.trim(),
+    date:     document.getElementById('sd-date').value || new Date().toISOString().split('T')[0],
+    company:  document.getElementById('sd-company').value.trim(),
+    logo:     siteDetails.logo || null,
+  };
+  clearDraft();
+  document.getElementById('site-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+  if (siteDetails.siteName) document.getElementById('header-site-name').textContent = siteDetails.siteName;
+  renderQuestion();
+}
+
+const progressFill = document.getElementById('progress-fill');
+const progressLabel = document.getElementById('progress-label');
+const mainArea = document.getElementById('main-area');
+
+function updateProgress() {
+  const pct = (currentIndex / questions.length) * 100;
+  progressFill.style.width = pct + '%';
+  progressLabel.textContent = `${currentIndex + 1} of ${questions.length}`;
+}
+
+function goBack() {
+  if (currentIndex === 0) return;
+  currentIndex--;
+  renderQuestion();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openAllQuestions() {
+  const list = document.getElementById('all-q-list');
+  list.innerHTML = '';
+  questions.forEach((q, idx) => {
+    const item = document.createElement('div');
+    item.className = 'all-q-item' + (idx === currentIndex ? ' current-q' : '') + (q.remedial ? ' remedial-q' : '');
+
+    const num = document.createElement('div');
+    num.className = 'all-q-num';
+    num.textContent = idx + 1;
+
+    const text = document.createElement('div');
+    text.className = 'all-q-text';
+    text.textContent = q.label;
+
+    const val = q.type === 'signature' ? answers['sig_engineer']
+              : q.type === 'customer_sig' ? answers['sig_customer']
+              : answers[q.id];
+    const tick = document.createElement('div');
+    tick.className = 'all-q-tick';
+    tick.textContent = (val !== undefined && val !== null && val !== '') ? '✅' : '○';
+
+    item.appendChild(num); item.appendChild(text); item.appendChild(tick);
+    item.onclick = () => { currentIndex = idx; closeOverlay(); renderQuestion(); window.scrollTo({ top: 0 }); };
+    list.appendChild(item);
+  });
+
+  document.getElementById('all-q-overlay').style.display = 'block';
+  setTimeout(() => {
+    const cur = list.querySelector('.current-q');
+    if (cur) cur.scrollIntoView({ block: 'center' });
+  }, 50);
+}
+
+function closeOverlay() {
+  document.getElementById('all-q-overlay').style.display = 'none';
+}
+
+function closeOverlayBg(e) {
+  if (e.target === document.getElementById('all-q-overlay')) closeOverlay();
+}
+
+function renderQuestion() {
+  if (currentIndex >= questions.length) { showSummary(); return; }
+  updateProgress();
+  const q = questions[currentIndex];
+  mainArea.innerHTML = '';
+
+  const card = document.createElement('div');
+  card.className = 'q-card' + (q.remedial ? ' remedial' : '');
+  const labelClass = q.remedial ? 'q-label remedial-label' : 'q-label';
+  const prefix = q.remedial ? '⚠️ Remedial — ' : `Question ${currentIndex + 1} of ${questions.length} — `;
+  card.innerHTML = `<div class="${labelClass}">${prefix}${q.label}</div>
+                    <div class="q-text">${q.text.replace(/\n/g,'<br>')}</div>`;
+  mainArea.appendChild(card);
+
+  let inputEl = null;
+
+  // YES/NO
+  if (q.type === 'yn' || q.type === 'yna') {
+    const hasNA = q.type === 'yna';
+    const row = document.createElement('div');
+    row.className = 'yn-row ' + (hasNA ? 'three' : 'two');
+
+    const yBtn = makeBtn('yn-btn yes', '✓ Yes');
+    const nBtn = makeBtn('yn-btn no', '✗ No');
+    row.appendChild(yBtn); row.appendChild(nBtn);
+
+    let naBtn = null;
+    if (hasNA) { naBtn = makeBtn('yn-btn na', 'N/A'); row.appendChild(naBtn); }
+
+    card.appendChild(row);
+
+    if (answers[q.id] === 'Yes') yBtn.classList.add('selected');
+    if (answers[q.id] === 'No')  nBtn.classList.add('selected');
+    if (naBtn && answers[q.id] === 'N/A') naBtn.classList.add('selected');
+
+    let commentsEl = null;
+    if (q.comments) {
+      commentsEl = document.createElement('textarea');
+      commentsEl.className = 'field-input';
+      commentsEl.placeholder = 'Add comments…';
+      commentsEl.rows = 3;
+      commentsEl.style.marginTop = '14px';
+      if (answers[q.id + '_comments']) commentsEl.value = answers[q.id + '_comments'];
+      card.appendChild(commentsEl);
+    }
+
+    const selectAndAdvance = (val, btn, ...others) => {
+      btn.classList.add('selected');
+      others.forEach(b => b && b.classList.remove('selected'));
+      answers[q.id] = val;
+      if (commentsEl) answers[q.id + '_comments'] = commentsEl.value;
+      if (q.triggersRemedial && val === 'Yes') addRemedialIfNeeded();
+      // Q33 PAVA: if No, skip Q34, Q35, Q36
+      if (q.id === 33 && val === 'No') {
+        answers[34] = 'N/A'; answers[35] = 'N/A'; answers[36] = null;
+        currentIndex = questions.findIndex(q => q.id === 37);
+        if (currentIndex < 0) currentIndex = questions.length;
+        setTimeout(() => { currentIndex === questions.length ? showSummary() : renderQuestion(); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 300);
+        return;
+      }
+      setTimeout(() => next(), 300);
+    };
+
+    yBtn.onclick = () => selectAndAdvance('Yes', yBtn, nBtn, naBtn);
+    nBtn.onclick = () => selectAndAdvance('No', nBtn, yBtn, naBtn);
+    if (naBtn) naBtn.onclick = () => selectAndAdvance('N/A', naBtn, yBtn, nBtn);
+
+  // CHOICE (multi-button)
+  } else if (q.type === 'choice') {
+    const row = document.createElement('div');
+    row.className = 'choice-row';
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = opt;
+      if (answers[q.id] === opt) btn.classList.add('selected');
+      btn.onclick = () => {
+        row.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        answers[q.id] = opt;
+        setTimeout(() => next(), 300);
+      };
+      row.appendChild(btn);
+    });
+    card.appendChild(row);
+
+  // TEXT
+  } else if (q.type === 'text') {
+    const ta = document.createElement('textarea');
+    ta.className = 'field-input'; ta.rows = 4; ta.placeholder = 'Type your answer…';
+    if (answers[q.id]) ta.value = answers[q.id];
+    card.appendChild(ta); inputEl = ta;
+
+  // NUMBER
+  } else if (q.type === 'number') {
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.className = 'field-input';
+    inp.placeholder = q.placeholder || 'Enter value…'; inp.inputMode = 'decimal';
+    if (answers[q.id]) inp.value = answers[q.id];
+    card.appendChild(inp); inputEl = inp;
+
+  // DATE
+  } else if (q.type === 'date') {
+    const inp = document.createElement('input');
+    inp.type = 'date'; inp.className = 'field-input';
+    if (answers[q.id]) inp.value = answers[q.id];
+    card.appendChild(inp); inputEl = inp;
+
+  // NEXT SERVICE DATE (3 buttons + auto-populated date)
+  } else if (q.type === 'next_service') {
+    const serviceDate = siteDetails.date || new Date().toISOString().split('T')[0];
+    const base = new Date(serviceDate + 'T00:00:00');
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'choice-row'; btnRow.style.marginBottom = '14px';
+
+    const dateInp = document.createElement('input');
+    dateInp.type = 'date'; dateInp.className = 'field-input';
+    if (answers[q.id]) dateInp.value = answers[q.id];
+    dateInp.oninput = () => { answers[q.id] = dateInp.value; };
+
+    const intervals = [['3 Months', 3], ['6 Months', 6], ['1 Year', 12]];
+    intervals.forEach(([label, months]) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = label;
+      const target = new Date(base);
+      target.setMonth(target.getMonth() + months);
+      const targetStr = target.toISOString().split('T')[0];
+      if (answers[q.id] === targetStr) btn.classList.add('selected');
+      btn.onclick = () => {
+        btnRow.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        dateInp.value = targetStr;
+        answers[q.id] = targetStr;
+      };
+      btnRow.appendChild(btn);
+    });
+
+    card.appendChild(btnRow);
+    card.appendChild(dateInp);
+    inputEl = dateInp;
+
+  // PHOTO
+  } else if (q.type === 'photo') {
+    const area = document.createElement('div'); area.className = 'photo-area';
+    const btn = document.createElement('div'); btn.className = 'photo-btn';
+    btn.innerHTML = '📷 Tap to take / choose photo';
+    btn.onclick = () => { photoInputTarget = q.id; document.getElementById('photo-input').click(); };
+    area.appendChild(btn);
+    const previews = document.createElement('div');
+    previews.className = 'photo-previews'; previews.id = 'photo-previews-' + q.id;
+    area.appendChild(previews); card.appendChild(area);
+    if (answers[q.id]) answers[q.id].forEach(src => { const img = document.createElement('img'); img.src = src; img.className = 'photo-thumb'; previews.appendChild(img); });
+
+  // ENGINEER SIGNATURE
+  } else if (q.type === 'signature') {
+    buildSignaturePad(card, q.sigKey || 'engineer');
+
+  // CUSTOMER NAME + SIGNATURE
+  } else if (q.type === 'customer_sig') {
+    const nameInp = document.createElement('input');
+    nameInp.type = 'text'; nameInp.className = 'field-input';
+    nameInp.placeholder = 'Customer name…'; nameInp.style.marginBottom = '14px';
+    if (answers['customer_name']) nameInp.value = answers['customer_name'];
+    nameInp.oninput = () => { answers['customer_name'] = nameInp.value; };
+    card.appendChild(nameInp);
+    buildSignaturePad(card, 'customer');
+  }
+
+  // Next / skip buttons for non-auto types
+  if (!['yn', 'yna', 'choice'].includes(q.type)) {
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'next-btn';
+    nextBtn.textContent = currentIndex === questions.length - 1 ? 'Complete Service ✓' : 'Next →';
+    nextBtn.onclick = () => {
+      if (inputEl) answers[q.id] = inputEl.value;
+      if (q.type === 'photo' && !answers[q.id]) answers[q.id] = [];
+      next();
+    };
+    mainArea.appendChild(nextBtn);
+
+    if (['photo', 'signature', 'customer_sig', 'text'].includes(q.type)) {
+      const skip = document.createElement('button');
+      skip.className = 'skip-btn'; skip.textContent = 'Skip this step';
+      skip.onclick = () => next();
+      mainArea.appendChild(skip);
+    }
+  }
+
+  // Save draft button always visible
+  const draftBtn = document.createElement('button');
+  draftBtn.className = 'save-draft-btn'; draftBtn.textContent = '💾 Save draft & close later';
+  draftBtn.onclick = () => { if (inputEl) answers[q.id] = inputEl.value; saveDraft(); };
+  mainArea.appendChild(draftBtn);
+}
+
+function makeBtn(className, text) {
+  const btn = document.createElement('button');
+  btn.className = className; btn.innerHTML = text;
+  return btn;
+}
+
+function buildSignaturePad(card, key) {
+  const wrap = document.createElement('div'); wrap.className = 'sig-wrap';
+  const canvas = document.createElement('canvas'); canvas.className = 'sig-canvas'; canvas.height = 180;
+  wrap.appendChild(canvas); card.appendChild(wrap);
+
+  const acts = document.createElement('div'); acts.className = 'sig-actions';
+  const clr = document.createElement('button'); clr.className = 'sig-clear'; clr.textContent = 'Clear';
+  clr.onclick = () => { const ctx = sigContexts[key]; if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); answers['sig_' + key] = null; };
+  acts.appendChild(clr); card.appendChild(acts);
+
+  requestAnimationFrame(() => {
+    canvas.width = canvas.offsetWidth;
+    const ctx = canvas.getContext('2d');
+    sigContexts[key] = ctx;
+    ctx.strokeStyle = '#111827'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    if (answers['sig_' + key]) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = answers['sig_' + key]; }
+    const getPos = e => {
+      const r = canvas.getBoundingClientRect(); const s = e.touches ? e.touches[0] : e;
+      return { x: (s.clientX - r.left) * (canvas.width / r.width), y: (s.clientY - r.top) * (canvas.height / r.height) };
+    };
+    canvas.addEventListener('mousedown', e => { sigDrawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+    canvas.addEventListener('mousemove', e => { if (!sigDrawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+    canvas.addEventListener('mouseup', () => { sigDrawing = false; answers['sig_' + key] = canvas.toDataURL(); });
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); sigDrawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
+    canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!sigDrawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, { passive: false });
+    canvas.addEventListener('touchend', () => { sigDrawing = false; answers['sig_' + key] = canvas.toDataURL(); });
+  });
+}
+
+function next() {
+  currentIndex++;
+  if (currentIndex >= questions.length) showSummary();
+  else { renderQuestion(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+}
+
+document.getElementById('photo-input').addEventListener('change', function(e) {
+  const files = Array.from(e.target.files); if (!files.length) return;
+  if (!answers[photoInputTarget]) answers[photoInputTarget] = [];
+  const previews = document.getElementById('photo-previews-' + photoInputTarget);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      answers[photoInputTarget].push(ev.target.result);
+      if (previews) { const img = document.createElement('img'); img.src = ev.target.result; img.className = 'photo-thumb'; previews.appendChild(img); }
+    };
+    reader.readAsDataURL(file);
+  });
+  this.value = '';
+});
+
+function showSummary() {
+  clearDraft();
+  document.getElementById('app-screen').style.display = 'none';
+  const sum = document.getElementById('summary-screen');
+  sum.style.display = 'flex';
+
+  const dateStr = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  sum.innerHTML = `<div class="summary-header"><div class="tick">✅</div><h2>Service Complete</h2><p>${dateStr}</p></div><div class="section-divider">Site Details</div>`;
+
+  const siteFields = [
+    ['Site / Customer', siteDetails.siteName], ['Address', siteDetails.address],
+    ['Contact', siteDetails.contact], ['Contact Number', siteDetails.phone],
+    ['Engineer', siteDetails.engineer], ['Job Reference', siteDetails.jobRef],
+    ['Service Date', siteDetails.date ? new Date(siteDetails.date + 'T00:00:00').toLocaleDateString('en-GB') : ''],
+  ];
+  siteFields.forEach(([label, val]) => {
+    if (!val) return;
+    const item = document.createElement('div'); item.className = 'summary-item';
+    item.innerHTML = `<div class="s-label">${label}</div><div class="s-value">${val}</div>`;
+    sum.appendChild(item);
+  });
+
+  const div = document.createElement('div'); div.className = 'section-divider'; div.textContent = 'PPM Checklist';
+  sum.appendChild(div);
+
+  questions.forEach(q => {
+    const isRemedial = q.remedial;
+    const val = q.type === 'signature' ? answers['sig_engineer']
+              : q.type === 'customer_sig' ? answers['sig_customer']
+              : answers[q.id];
+    if (val === undefined || val === null || val === '') return;
+
+    const item = document.createElement('div');
+    item.className = 'summary-item' + (isRemedial ? ' remedial-item' : '');
+    let display = '';
+    if (q.type === 'photo' && Array.isArray(val)) {
+      display = val.map(src => `<img src="${src}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;margin-top:6px;" />`).join('');
+    } else if (q.type === 'signature' || q.type === 'customer_sig') {
+      const name = q.type === 'customer_sig' ? (answers['customer_name'] ? `<div class="s-value" style="margin-bottom:6px;">${answers['customer_name']}</div>` : '') : '';
+      display = name + `<img src="${val}" style="width:100%;background:#fff;border-radius:6px;margin-top:4px;" />`;
+    } else {
+      display = `<div class="s-value">${val}</div>`;
+    }
+    const commentDisplay = answers[q.id + '_comments'] ? `<div style="color:var(--muted);font-size:13px;margin-top:6px;">${answers[q.id + '_comments']}</div>` : '';
+    item.innerHTML = `<div class="s-label">${isRemedial ? '⚠️ ' : ''}${q.label}</div>${display}${commentDisplay}`;
+    sum.appendChild(item);
+  });
+
+  // Buttons
+  const exportBtn = document.createElement('button');
+  exportBtn.className = 'export-btn'; exportBtn.textContent = '📄 Save PPM PDF';
+  exportBtn.onclick = exportPPMPDF; sum.appendChild(exportBtn);
+
+  if (remedialAdded) {
+    const remBtn = document.createElement('button');
+    remBtn.className = 'remedial-btn'; remBtn.textContent = '⚠️ Save Remedial PDF';
+    remBtn.onclick = exportRemedialPDF; sum.appendChild(remBtn);
+  }
+
+  const emailBtn = document.createElement('button');
+  emailBtn.className = 'email-btn'; emailBtn.textContent = '✉️ Email PDF';
+  emailBtn.onclick = emailPDF; sum.appendChild(emailBtn);
+
+  const restartBtn = document.createElement('button');
+  restartBtn.className = 'restart-btn'; restartBtn.textContent = '🔄 Start New Service';
+  restartBtn.onclick = () => {
+    currentIndex = 0; answers = {}; siteDetails = {}; remedialAdded = false;
+    questions = [...BASE_QUESTIONS]; sigContexts = {};
+    clearDraft();
+    document.getElementById('summary-screen').style.display = 'none';
+    document.getElementById('site-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('sd-date').value = new Date().toISOString().split('T')[0];
+    window.scrollTo({ top: 0 });
+  };
+  sum.appendChild(restartBtn);
+}
+
+// ─── PDF HELPERS ─────────────────────────────────────────────────────────────
+function pdfHeader(doc, title) {
+  // Background bar
+  doc.setFillColor(55, 65, 81);
+  doc.rect(0, 0, 210, 22, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+  doc.text(title, 14, 14);
+
+  let y = 30;
+
+  // Company logo + name block below header
+  if (siteDetails.logo || siteDetails.company) {
+    if (siteDetails.logo) {
+      try {
+        doc.addImage(siteDetails.logo, 'JPEG', 14, y, 40, 14);
+        if (siteDetails.company) {
+          doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(55, 65, 81);
+          doc.text(siteDetails.company, 58, y + 9);
+        }
+      } catch(e) {
+        if (siteDetails.company) {
+          doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(55, 65, 81);
+          doc.text(siteDetails.company, 14, y + 9);
+        }
+      }
+    } else {
+      doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(55, 65, 81);
+      doc.text(siteDetails.company, 14, y + 9);
+    }
+    y += 22;
+    doc.setDrawColor(220, 220, 220); doc.line(14, y, 196, y); y += 6;
+  }
+
+  return y;
+}
+
+function pdfSiteBlock(doc, y, margin, contentW) {
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(55, 65, 81);
+  doc.text('SITE DETAILS', margin, y); y += 6;
+  doc.setDrawColor(55, 65, 81); doc.line(margin, y, margin + contentW, y); y += 5;
+  const rows = [
+    ['Alarm Company', siteDetails.company],
+    ['Site / Customer', siteDetails.siteName], ['Address', siteDetails.address],
+    ['Contact', siteDetails.contact], ['Contact Number', siteDetails.phone],
+    ['Engineer', siteDetails.engineer], ['Job Reference', siteDetails.jobRef],
+    ['Service Date', siteDetails.date ? new Date(siteDetails.date + 'T00:00:00').toLocaleDateString('en-GB') : ''],
+    ['Report Generated', new Date().toLocaleString('en-GB')],
+  ];
+  doc.setFontSize(9);
+  rows.forEach(([label, val]) => {
+    if (!val) return;
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(80, 80, 80); doc.text(label + ':', margin, y);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
+    const lines = doc.splitTextToSize(val, contentW - 45); doc.text(lines, margin + 44, y);
+    y += lines.length * 5 + 2;
+  });
+  return y;
+}
+
+function pdfFooter(doc, pageW, margin) {
+  const n = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i); doc.setFontSize(8); doc.setTextColor(180,180,180); doc.setFont('helvetica','normal');
+    doc.text(`JobRAEF | Page ${i} of ${n}`, margin, 292);
+    doc.text(new Date().toLocaleDateString('en-GB'), pageW - margin, 292, { align: 'right' });
+  }
+}
+
+function getFilename(prefix) {
+  return `${prefix}_${(siteDetails.siteName||'Report').replace(/\s+/g,'_')}_${siteDetails.date||new Date().toISOString().split('T')[0]}.pdf`;
+}
+
+async function buildPPMDoc() {
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const pageW = 210, margin = 14, contentW = pageW - margin * 2;
+  let y = pdfHeader(doc, 'JobRAEF — FIRE PPM SERVICE REPORT');
+
+  y = pdfSiteBlock(doc, y, margin, contentW);
+  y += 4;
+
+  // Checklist
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
+  doc.text('PPM CHECKLIST', margin, y); y += 6;
+  doc.setDrawColor(55,65,81); doc.line(margin, y, margin+contentW, y); y += 5;
+
+  const checkPage = (needed=10) => { if (y+needed>275) { doc.addPage(); y=14; } };
+
+  doc.setFontSize(9); let rowAlt = false;
+  for (const q of BASE_QUESTIONS) {
+    if (q.type === 'photo' || q.type === 'signature' || q.type === 'customer_sig') continue;
+    const val = answers[q.id];
+    if (val === undefined || val === null || val === '') continue;
+    checkPage(10);
+    if (rowAlt) { doc.setFillColor(248,248,248); doc.rect(margin, y-4, contentW, 7, 'F'); }
+    rowAlt = !rowAlt;
+    doc.setFont('helvetica','bold'); doc.setTextColor(80,80,80);
+    const ll = doc.splitTextToSize(q.label, 55); doc.text(ll, margin, y);
+    doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
+    const vl = doc.splitTextToSize(String(val), contentW-58); doc.text(vl, margin+58, y);
+    y += Math.max(ll.length, vl.length) * 5 + 2;
+    if (answers[q.id+'_comments']) {
+      checkPage(8); doc.setFont('helvetica','italic'); doc.setTextColor(100,100,100);
+      const cl = doc.splitTextToSize('Comments: '+answers[q.id+'_comments'], contentW-10);
+      doc.text(cl, margin+4, y); y += cl.length*4.5+2;
+    }
+  }
+
+  // Photos
+  const photoQs = BASE_QUESTIONS.filter(q => q.type==='photo');
+  if (photoQs.some(q => answers[q.id]?.length)) {
+    y+=4; checkPage(14);
+    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
+    doc.text('PHOTOS', margin, y); y+=6;
+    doc.setDrawColor(55,65,81); doc.line(margin,y,margin+contentW,y); y+=6;
+    for (const q of photoQs) {
+      if (!answers[q.id]?.length) continue;
+      doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(80,80,80);
+      doc.text(q.label, margin, y); y+=5;
+      for (const src of answers[q.id]) {
+        checkPage(55);
+        try { doc.addImage(src,'JPEG',margin,y,80,55); y+=60; }
+        catch(e) { doc.setFont('helvetica','italic'); doc.setTextColor(150,150,150); doc.text('[Photo could not be embedded]',margin,y); y+=8; }
+      }
+    }
+  }
+
+  // Engineer sig
+  if (answers['sig_engineer']) {
+    y+=4; checkPage(50);
+    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
+    doc.text('ENGINEER SIGNATURE', margin, y); y+=6;
+    doc.setDrawColor(55,65,81); doc.line(margin,y,margin+contentW,y); y+=6;
+    try { doc.addImage(answers['sig_engineer'],'PNG',margin,y,90,30); y+=36; } catch(e){}
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+    doc.text(siteDetails.engineer||'', margin, y); y+=8;
+  }
+
+  // Customer sig
+  if (answers['sig_customer']) {
+    checkPage(50);
+    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
+    doc.text('CUSTOMER SIGNATURE', margin, y); y+=6;
+    doc.setDrawColor(55,65,81); doc.line(margin,y,margin+contentW,y); y+=6;
+    if (answers['customer_name']) {
+      doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
+      doc.text(answers['customer_name'], margin, y); y+=6;
+    }
+    try { doc.addImage(answers['sig_customer'],'PNG',margin,y,90,30); y+=36; } catch(e){}
+  }
+
+  pdfFooter(doc, pageW, margin);
+  return doc;
+}
+
+async function buildRemedialDoc() {
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const pageW = 210, margin = 14, contentW = pageW - margin * 2;
+  let y = pdfHeader(doc, 'JobRAEF — REMEDIAL WORKS SHEET');
+
+  y = pdfSiteBlock(doc, y, margin, contentW);
+  y += 4;
+
+  const checkPage = (needed=10) => { if (y+needed>275) { doc.addPage(); y=14; } };
+
+  // Amber header
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(217, 119, 6);
+  doc.text('REMEDIAL WORKS', margin, y); y+=6;
+  doc.setDrawColor(217,119,6); doc.line(margin,y,margin+contentW,y); y+=6;
+
+  doc.setFontSize(10);
+  REMEDIAL_QUESTIONS.forEach(q => {
+    const val = answers[q.id];
+    if (!val) return;
+    checkPage(14);
+    doc.setFont('helvetica','bold'); doc.setTextColor(80,80,80);
+    doc.text(q.label, margin, y); y+=5;
+    doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
+    const lines = doc.splitTextToSize(String(val), contentW);
+    doc.text(lines, margin, y); y += lines.length*5+6;
+  });
+
+  pdfFooter(doc, pageW, margin);
+  return doc;
+}
+
+async function exportPPMPDF() {
+  const doc = await buildPPMDoc();
+  doc.save(getFilename('PPM'));
+}
+
+async function exportRemedialPDF() {
+  const doc = await buildRemedialDoc();
+  doc.save(getFilename('Remedial'));
+}
+
+async function emailPDF() {
+  const doc = await buildPPMDoc();
+  const filename = getFilename('PPM');
+  doc.save(filename);
+  const subject = encodeURIComponent(`Fire PPM Service Report — ${siteDetails.siteName||''} — ${siteDetails.date ? new Date(siteDetails.date+'T00:00:00').toLocaleDateString('en-GB') : ''}`);
+  const body = encodeURIComponent(
+    `Please find attached the Fire PPM service report.\n\n` +
+    `Site: ${siteDetails.siteName||''}\nDate: ${siteDetails.date ? new Date(siteDetails.date+'T00:00:00').toLocaleDateString('en-GB') : ''}\n` +
+    `Engineer: ${siteDetails.engineer||''}\nJob Ref: ${siteDetails.jobRef||''}\n\n` +
+    `The PDF (${filename}) has been saved to your device — please attach it before sending.`
+  );
+  setTimeout(() => { window.location.href = `mailto:?subject=${subject}&body=${body}`; }, 500);
+}
+</script>
+</body>
+</html>
