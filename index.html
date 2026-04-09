@@ -818,13 +818,13 @@ function pdfSiteBlock(doc, y, margin, contentW) {
     ['Service Date', siteDetails.date ? new Date(siteDetails.date + 'T00:00:00').toLocaleDateString('en-GB') : ''],
     ['Report Generated', new Date().toLocaleString('en-GB')],
   ];
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   rows.forEach(([label, val]) => {
     if (!val) return;
-    doc.setFont('helvetica', 'bold'); doc.setTextColor(80, 80, 80); doc.text(label + ':', margin, y);
-    doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
-    const lines = doc.splitTextToSize(val, contentW - 45); doc.text(lines, margin + 44, y);
-    y += lines.length * 5 + 2;
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(55, 65, 81); doc.text(label + ':', margin, y);
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(20, 20, 20);
+    const lines = doc.splitTextToSize(val, contentW - 48); doc.text(lines, margin + 48, y);
+    y += lines.length * 5.5 + 2;
   });
   return y;
 }
@@ -857,24 +857,32 @@ async function buildPPMDoc() {
 
   const checkPage = (needed=10) => { if (y+needed>275) { doc.addPage(); y=14; } };
 
-  doc.setFontSize(9); let rowAlt = false;
   for (const q of BASE_QUESTIONS) {
     if (q.type === 'photo' || q.type === 'signature' || q.type === 'customer_sig') continue;
     const val = answers[q.id];
     if (val === undefined || val === null || val === '') continue;
-    checkPage(10);
-    if (rowAlt) { doc.setFillColor(248,248,248); doc.rect(margin, y-4, contentW, 7, 'F'); }
-    rowAlt = !rowAlt;
-    doc.setFont('helvetica','bold'); doc.setTextColor(80,80,80);
-    const ll = doc.splitTextToSize(q.label, 55); doc.text(ll, margin, y);
-    doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
-    const vl = doc.splitTextToSize(String(val), contentW-58); doc.text(vl, margin+58, y);
-    y += Math.max(ll.length, vl.length) * 5 + 2;
+
+    checkPage(22);
+
+    // Question text (full, bold, dark)
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
+    const ql = doc.splitTextToSize(q.text.replace(/\n/g,' '), contentW);
+    doc.text(ql, margin, y); y += ql.length * 5.5 + 2;
+
+    // Answer (larger, bold, black)
+    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+    const vl = doc.splitTextToSize(String(val), contentW);
+    doc.text(vl, margin, y); y += vl.length * 6 + 2;
+
+    // Comments
     if (answers[q.id+'_comments']) {
-      checkPage(8); doc.setFont('helvetica','italic'); doc.setTextColor(100,100,100);
-      const cl = doc.splitTextToSize('Comments: '+answers[q.id+'_comments'], contentW-10);
-      doc.text(cl, margin+4, y); y += cl.length*4.5+2;
+      checkPage(8); doc.setFontSize(9); doc.setFont('helvetica','italic'); doc.setTextColor(100,100,100);
+      const cl = doc.splitTextToSize('Comments: '+answers[q.id+'_comments'], contentW);
+      doc.text(cl, margin, y); y += cl.length*5+2;
     }
+
+    // Divider between questions
+    doc.setDrawColor(230,230,230); doc.line(margin, y, margin+contentW, y); y += 5;
   }
 
   // Photos
@@ -939,16 +947,17 @@ async function buildRemedialDoc() {
   doc.text('REMEDIAL WORKS', margin, y); y+=6;
   doc.setDrawColor(217,119,6); doc.line(margin,y,margin+contentW,y); y+=6;
 
-  doc.setFontSize(10);
   REMEDIAL_QUESTIONS.forEach(q => {
     const val = answers[q.id];
     if (!val) return;
-    checkPage(14);
-    doc.setFont('helvetica','bold'); doc.setTextColor(80,80,80);
-    doc.text(q.label, margin, y); y+=5;
-    doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
-    const lines = doc.splitTextToSize(String(val), contentW);
-    doc.text(lines, margin, y); y += lines.length*5+6;
+    checkPage(22);
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
+    const ql = doc.splitTextToSize(q.text, contentW);
+    doc.text(ql, margin, y); y += ql.length*5.5+2;
+    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+    const vl = doc.splitTextToSize(String(val), contentW);
+    doc.text(vl, margin, y); y += vl.length*6+2;
+    doc.setDrawColor(230,230,230); doc.line(margin, y, margin+contentW, y); y += 5;
   });
 
   pdfFooter(doc, pageW, margin);
