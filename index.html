@@ -373,14 +373,10 @@ function startService() {
   renderQuestion();
 }
 
-const progressFill = document.getElementById('progress-fill');
-const progressLabel = document.getElementById('progress-label');
-const mainArea = document.getElementById('main-area');
-
 function updateProgress() {
   const pct = (currentIndex / questions.length) * 100;
-  progressFill.style.width = pct + '%';
-  progressLabel.textContent = `${currentIndex + 1} of ${questions.length}`;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${currentIndex + 1} of ${questions.length}`;
 }
 
 function goBack() {
@@ -436,6 +432,7 @@ function renderQuestion() {
   if (currentIndex >= questions.length) { showSummary(); return; }
   updateProgress();
   const q = questions[currentIndex];
+  const mainArea = document.getElementById('main-area');
   mainArea.innerHTML = '';
 
   const card = document.createElement('div');
