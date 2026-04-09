@@ -355,22 +355,26 @@ function loadDraft() {
 }
 
 function startService() {
-  siteDetails = {
-    siteName: document.getElementById('sd-site-name').value.trim(),
-    address:  document.getElementById('sd-address').value.trim(),
-    contact:  document.getElementById('sd-contact').value.trim(),
-    phone:    document.getElementById('sd-phone').value.trim(),
-    engineer: document.getElementById('sd-engineer').value.trim(),
-    jobRef:   document.getElementById('sd-jobref').value.trim(),
-    date:     document.getElementById('sd-date').value || new Date().toISOString().split('T')[0],
-    company:  document.getElementById('sd-company').value.trim(),
-    logo:     window._getPendingLogo ? window._getPendingLogo() : null,
-  };
-  clearDraft();
-  document.getElementById('site-screen').style.display = 'none';
-  document.getElementById('app-screen').style.display = 'flex';
-  if (siteDetails.siteName) document.getElementById('header-site-name').textContent = siteDetails.siteName;
-  renderQuestion();
+  try {
+    siteDetails = {
+      siteName: document.getElementById('sd-site-name').value.trim(),
+      address:  document.getElementById('sd-address').value.trim(),
+      contact:  document.getElementById('sd-contact').value.trim(),
+      phone:    document.getElementById('sd-phone').value.trim(),
+      engineer: document.getElementById('sd-engineer').value.trim(),
+      jobRef:   document.getElementById('sd-jobref').value.trim(),
+      date:     document.getElementById('sd-date').value || new Date().toISOString().split('T')[0],
+      company:  document.getElementById('sd-company').value.trim(),
+      logo:     window._getPendingLogo ? window._getPendingLogo() : null,
+    };
+    clearDraft();
+    document.getElementById('site-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'flex';
+    if (siteDetails.siteName) document.getElementById('header-site-name').textContent = siteDetails.siteName;
+    renderQuestion();
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
 }
 
 function updateProgress() {
