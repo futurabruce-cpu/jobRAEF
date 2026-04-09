@@ -776,10 +776,18 @@ function pdfHeader(doc, title) {
   if (siteDetails.logo || siteDetails.company) {
     if (siteDetails.logo) {
       try {
-        doc.addImage(siteDetails.logo, 'JPEG', 14, y, 40, 14);
+        // Preserve aspect ratio — fit within max 50mm wide, 18mm tall
+        const img = new Image();
+        await new Promise(res => { img.onload = res; img.src = siteDetails.logo; });
+        const maxW = 50, maxH = 18;
+        const ratio = img.naturalWidth / img.naturalHeight;
+        let w = maxW, h = maxW / ratio;
+        if (h > maxH) { h = maxH; w = maxH * ratio; }
+        const fmt = siteDetails.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(siteDetails.logo, fmt, 14, y, w, h);
         if (siteDetails.company) {
           doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(55, 65, 81);
-          doc.text(siteDetails.company, 58, y + 9);
+          doc.text(siteDetails.company, 14 + w + 6, y + h / 2 + 2);
         }
       } catch(e) {
         if (siteDetails.company) {
