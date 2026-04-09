@@ -307,17 +307,19 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('draft-bar-wrap').style.display = 'block';
   }
   // Logo upload handler
+  let pendingLogo = null;
   document.getElementById('logo-input').addEventListener('change', function(e) {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      siteDetails.logo = ev.target.result;
+      pendingLogo = ev.target.result;
       const preview = document.getElementById('logo-preview');
       preview.src = ev.target.result; preview.style.display = 'block';
       document.getElementById('logo-upload-label').textContent = '✅ Logo uploaded';
     };
     reader.readAsDataURL(file);
   });
+  window._getPendingLogo = () => pendingLogo;
 });
 
 function addRemedialIfNeeded() {
@@ -362,7 +364,7 @@ function startService() {
     jobRef:   document.getElementById('sd-jobref').value.trim(),
     date:     document.getElementById('sd-date').value || new Date().toISOString().split('T')[0],
     company:  document.getElementById('sd-company').value.trim(),
-    logo:     siteDetails.logo || null,
+    logo:     window._getPendingLogo ? window._getPendingLogo() : null,
   };
   clearDraft();
   document.getElementById('site-screen').style.display = 'none';
