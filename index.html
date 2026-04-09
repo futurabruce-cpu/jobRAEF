@@ -765,10 +765,10 @@ function showSummary() {
 function pdfHeader(doc, title) {
   // Background bar
   doc.setFillColor(55, 65, 81);
-  doc.rect(0, 0, 210, 22, 'F');
+  doc.rect(0, 0, 210, 26, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-  doc.text(title, 14, 14);
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+  doc.text(title, 14, 18);
 
   let y = 30;
 
@@ -845,7 +845,7 @@ function getFilename(prefix) {
 async function buildPPMDoc() {
   const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
   const pageW = 210, margin = 14, contentW = pageW - margin * 2;
-  let y = pdfHeader(doc, 'JobRAEF — FIRE PPM SERVICE REPORT');
+  let y = pdfHeader(doc, 'FIRE PPM SERVICE REPORT');
 
   y = pdfSiteBlock(doc, y, margin, contentW);
   y += 4;
@@ -935,7 +935,7 @@ async function buildPPMDoc() {
 async function buildRemedialDoc() {
   const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
   const pageW = 210, margin = 14, contentW = pageW - margin * 2;
-  let y = pdfHeader(doc, 'JobRAEF — REMEDIAL WORKS SHEET');
+  let y = pdfHeader(doc, 'REMEDIAL WORKS SHEET');
 
   y = pdfSiteBlock(doc, y, margin, contentW);
   y += 4;
