@@ -908,12 +908,18 @@ function normalisePhoto(file, cb) {
 
 function showSummary() {
   clearDraft();
-  // Submit main callout record
-  submitVocaToDashboard(null);
-  // If follow-up needed, submit separate follow-up record
-  if (followupAdded) {
-    submitFollowUpToDashboard();
-  }
+  // Submit record first, then upload PDF once we have the ID
+  (async () => {
+    await submitVocaToDashboard(null);
+    if (lastSubmissionId) {
+      try {
+        const doc = await buildPPMDoc();
+        const pdfBase64 = doc.output('datauristring').split(',')[1];
+        await uploadPDFToDashboard(pdfBase64);
+      } catch(e) { console.warn('PDF upload failed:', e); }
+    }
+    if (followupAdded) submitFollowUpToDashboard();
+  })();
   document.getElementById('app-screen').style.display = 'none';
   const sum = document.getElementById('summary-screen');
   sum.style.display = 'flex';
