@@ -869,21 +869,28 @@ function showSummary() {
 
   // Buttons
   const exportBtn = document.createElement('button');
-  exportBtn.className = 'export-btn'; exportBtn.textContent = '📄 Save PPM PDF';
-  exportBtn.onclick = exportPPMPDF; sum.appendChild(exportBtn);
+  exportBtn.className = 'export-btn';
+  exportBtn.innerHTML = '📥 Save PDF to Device';
+  exportBtn.onclick = exportPPMPDF;
+  sum.appendChild(exportBtn);
 
   if (remedialAdded) {
     const remBtn = document.createElement('button');
-    remBtn.className = 'remedial-btn'; remBtn.textContent = '⚠️ Save Remedial PDF';
-    remBtn.onclick = exportRemedialPDF; sum.appendChild(remBtn);
+    remBtn.className = 'remedial-btn';
+    remBtn.innerHTML = '⚠️ Save Remedial PDF';
+    remBtn.onclick = exportRemedialPDF;
+    sum.appendChild(remBtn);
   }
 
   const emailBtn = document.createElement('button');
-  emailBtn.className = 'email-btn'; emailBtn.textContent = '✉️ Email PDF';
-  emailBtn.onclick = emailPDF; sum.appendChild(emailBtn);
+  emailBtn.className = 'email-btn';
+  emailBtn.innerHTML = '✉️ Email PDF';
+  emailBtn.onclick = emailPDF;
+  sum.appendChild(emailBtn);
 
   const restartBtn = document.createElement('button');
-  restartBtn.className = 'restart-btn'; restartBtn.textContent = '🔄 Start New Service';
+  restartBtn.className = 'restart-btn';
+  restartBtn.innerHTML = '🏠 Return to Home';
   restartBtn.onclick = () => {
     currentIndex = 0; answers = {}; siteDetails = {}; remedialAdded = false;
     questions = [...BASE_QUESTIONS]; sigContexts = {};
