@@ -912,13 +912,18 @@ function showSummary() {
   (async () => {
     await submitVocaToDashboard(null);
     if (lastSubmissionId) {
+      showToast('⏳ Uploading PDF...');
       try {
         const doc = await buildPPMDoc();
         const pdfBase64 = doc.output('datauristring').split(',')[1];
         await uploadPDFToDashboard(pdfBase64);
-      } catch(e) { console.warn('PDF upload failed:', e); }
+        showToast('✅ PDF saved to dashboard!');
+      } catch(e) {
+        showToast('❌ PDF upload failed: ' + e.message, false);
+        console.warn('PDF upload failed:', e);
+      }
     }
-    if (followupAdded) submitFollowUpToDashboard();
+    if (followupAdded || answers['c7'] === 'Yes') submitFollowUpToDashboard();
   })();
   document.getElementById('app-screen').style.display = 'none';
   const sum = document.getElementById('summary-screen');
