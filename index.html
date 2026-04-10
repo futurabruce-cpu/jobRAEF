@@ -1248,7 +1248,7 @@ async function submitVocaToDashboard(pdfBase64) {
         service_date: siteDetails.date || new Date().toISOString().split('T')[0],
         job_type: window._jobType || 'PPM',
         company_name: 'GOW Systems',
-        follow_up_required: followupAdded ? true : false,
+        follow_up_required: (followupAdded || answers['c7'] === 'Yes') ? true : false,
         answers,
         pdf_base64: null,
       }),
