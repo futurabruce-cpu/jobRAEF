@@ -401,8 +401,19 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('site-screen').style.display = 'none';
   }
-  // Logo — default to GOW, allow override
-  let pendingLogo = 'gow-logo.webp'; // default
+  // Logo — preload GOW logo as base64 so jsPDF can use it
+  let pendingLogo = null;
+  const _gowImg = new Image();
+  _gowImg.crossOrigin = 'anonymous';
+  _gowImg.onload = function() {
+    const canvas = document.createElement('canvas');
+    canvas.width = _gowImg.naturalWidth; canvas.height = _gowImg.naturalHeight;
+    canvas.getContext('2d').drawImage(_gowImg, 0, 0);
+    pendingLogo = canvas.toDataURL('image/png');
+    document.getElementById('logo-preview').src = pendingLogo;
+  };
+  _gowImg.src = 'gow-logo.webp';
+
   document.getElementById('logo-input').addEventListener('change', function(e) {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
