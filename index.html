@@ -211,11 +211,16 @@
       <input class="field-input" id="sd-company" type="text" placeholder="e.g. Voca Fire & Security" />
     </div>
     <div class="field-group">
-      <label>Company Logo (optional)</label>
-      <div class="logo-upload-btn" id="logo-upload-btn" onclick="document.getElementById('logo-input').click()">
-        <span id="logo-upload-label">📁 Upload from camera roll</span>
+      <label>Company Logo</label>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <img id="logo-preview" src="gow-logo.webp" style="max-height:60px;max-width:160px;border-radius:8px;object-fit:contain;border:2px solid #e5e7eb;padding:4px;background:#fff;" />
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:6px;">GOW Systems <span style="color:#16a34a;font-size:12px;">✓ Default</span></div>
+          <div class="logo-upload-btn" id="logo-upload-btn" onclick="document.getElementById('logo-input').click()" style="padding:10px 14px;font-size:13px;">
+            <span id="logo-upload-label">📁 Upload different logo</span>
+          </div>
+        </div>
       </div>
-      <img id="logo-preview" src="" style="display:none; max-height:60px; max-width:200px; margin-top:8px; border-radius:8px; object-fit:contain;" />
       <input type="file" id="logo-input" accept="image/*" style="display:none;" />
     </div>
   </div>
@@ -396,16 +401,16 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('site-screen').style.display = 'none';
   }
-  // Logo upload handler
-  let pendingLogo = null;
+  // Logo — default to GOW, allow override
+  let pendingLogo = 'gow-logo.webp'; // default
   document.getElementById('logo-input').addEventListener('change', function(e) {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
       pendingLogo = ev.target.result;
       const preview = document.getElementById('logo-preview');
-      preview.src = ev.target.result; preview.style.display = 'block';
-      document.getElementById('logo-upload-label').textContent = '✅ Logo uploaded';
+      preview.src = ev.target.result;
+      document.getElementById('logo-upload-label').textContent = '✅ Custom logo uploaded';
     };
     reader.readAsDataURL(file);
   });
