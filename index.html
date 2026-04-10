@@ -370,15 +370,15 @@ const BASE_QUESTIONS = [
 ];
 
 const CALLOUT_QUESTIONS = [
-  { id: 'c1', label: 'Work Carried Out',              text: 'Describe the work carried out.',                          type: 'text' },
-  { id: 'c2', label: 'Picture',                       text: 'Take a photo of the system/work.',                        type: 'photo' },
-  { id: 'c3', label: 'Equipment Used',                text: 'What equipment was used on this visit?',                  type: 'text', placeholder: 'e.g. None, Multimeter, etc' },
-  { id: 'c4', label: 'Number of Engineers',           text: 'How many engineers attended this visit?',                 type: 'number', placeholder: 'e.g. 1' },
-  { id: 'c6', label: 'System Current Status',         text: 'What is the current status of the system?',              type: 'text', placeholder: 'e.g. Normal, Fault on zone 3...' },
-  { id: 'c7', label: 'Return Visit Required?',        text: 'Is a return visit required?',                             type: 'yn', triggersFollowup: true },
-  { id: 'c8t', label: 'Time on Site',                  text: 'How long were you on site?',                              type: 'text', placeholder: 'e.g. 1 or 1.5 hours' },
-  { id: 'c8', label: 'Engineer Sign Off',             text: 'Engineer signature.',                                     type: 'signature' },
-  { id: 'c9', label: 'Customer Sign Off',             text: 'Customer signature.',                                     type: 'customer_sig' },
+  { id: 'c1', label: 'Work Carried Out',        text: 'Describe the work carried out.',                          type: 'text' },
+  { id: 'c2', label: 'Picture',                 text: 'Take a photo of the system/work.',                        type: 'photo' },
+  { id: 'c3', label: 'Equipment Used',          text: 'What equipment was used on this visit?',                  type: 'text', placeholder: 'e.g. None, Multimeter, etc' },
+  { id: 'c4', label: 'Number of Engineers',     text: 'How many engineers attended this visit?',                 type: 'number', placeholder: 'e.g. 1' },
+  { id: 'c6', label: 'System Current Status',   text: 'What is the current status of the system?',              type: 'text', placeholder: 'e.g. Normal, Fault on zone 3...' },
+  { id: 'c8t', label: 'Time on Site',           text: 'How long were you on site?',                              type: 'text', placeholder: 'e.g. 1 or 1.5 hours' },
+  { id: 'c7', label: 'Return Visit Required?',  text: 'Is a return visit required?',                             type: 'yn', triggersFollowup: true },
+  { id: 'c8', label: 'Engineer Sign Off',       text: 'Engineer signature.',                                     type: 'signature' },
+  { id: 'c9', label: 'Customer Sign Off',       text: 'Customer signature.',                                     type: 'customer_sig' },
 ];
 
 const CALLOUT_FOLLOWUP_QUESTIONS = [
@@ -465,13 +465,13 @@ function addRemedialIfNeeded() {
 function addFollowupQuestionsIfNeeded() {
   if (!followupAdded) {
     followupAdded = true;
-    // Insert follow-up questions before Engineer Sign Off (c8)
-    const sigIdx = questions.findIndex(q => q.id === 'c8');
-    if (sigIdx > -1) {
+    // Insert follow-up questions after Return Visit question (c7)
+    const c7Idx = questions.findIndex(q => q.id === 'c7');
+    if (c7Idx > -1) {
       questions = [
-        ...questions.slice(0, sigIdx),
+        ...questions.slice(0, c7Idx + 1),
         ...CALLOUT_FOLLOWUP_QUESTIONS,
-        ...questions.slice(sigIdx),
+        ...questions.slice(c7Idx + 1),
       ];
     }
   }
@@ -908,10 +908,12 @@ function normalisePhoto(file, cb) {
 
 function showSummary() {
   clearDraft();
-  buildPPMDoc().then(doc => {
-    const pdfBase64 = doc.output('datauristring').split(',')[1];
-    submitVocaToDashboard(pdfBase64);
-  }).catch(() => submitVocaToDashboard(null));
+  // Submit main callout record
+  submitVocaToDashboard(null);
+  // If follow-up needed, submit separate follow-up record
+  if (followupAdded) {
+    submitFollowUpToDashboard();
+  }
   document.getElementById('app-screen').style.display = 'none';
   const sum = document.getElementById('summary-screen');
   sum.style.display = 'flex';
@@ -1252,6 +1254,38 @@ async function submitVocaToDashboard(pdfBase64) {
     }
   } catch(e) {
     showToast('❌ Failed to reach dashboard: ' + e.message, false);
+  }
+}
+
+async function submitFollowUpToDashboard() {
+  if (!engineerEmail) return;
+  try {
+    const followupAnswers = {};
+    CALLOUT_FOLLOWUP_QUESTIONS.forEach(q => {
+      if (answers[q.id] !== undefined) followupAnswers[q.id] = answers[q.id];
+    });
+    const res = await fetch(`${DASHBOARD_URL}/api/follow-ups`, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {'Content-Type':'application/json','x-api-key':API_KEY},
+      body: JSON.stringify({
+        engineer_email: engineerEmail,
+        site_name: siteDetails.siteName || 'Unknown',
+        site_address: siteDetails.address || '',
+        service_date: siteDetails.date || new Date().toISOString().split('T')[0],
+        job_type: window._jobType || 'Callout',
+        company_name: 'GOW Systems',
+        answers: followupAnswers,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('✅ Follow-up saved to dashboard!');
+    } else {
+      showToast('❌ Follow-up error: ' + (data.error || res.status), false);
+    }
+  } catch(e) {
+    showToast('❌ Follow-up failed: ' + e.message, false);
   }
 }
 
