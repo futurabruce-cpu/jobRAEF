@@ -392,9 +392,12 @@ window.addEventListener('DOMContentLoaded', () => {
   // Auto-login if coming from job picker
   const urlParams = new URLSearchParams(window.location.search);
   const autoUser = urlParams.get('user');
+  const autoJobType = urlParams.get('jobtype') || 'ppm'; // 'ppm' or 'callout'
   if (autoUser) {
     engineerEmail = autoUser;
     engineerUsername = autoUser.split('@')[0];
+    // Store job type for submission
+    window._jobType = autoJobType === 'callout' ? 'Callout' : 'PPM';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('site-screen').style.display = 'flex';
   } else {
@@ -1183,6 +1186,8 @@ async function submitVocaToDashboard(pdfBase64) {
         site_name: siteDetails.siteName || 'Unknown',
         site_address: siteDetails.address || '',
         service_date: siteDetails.date || new Date().toISOString().split('T')[0],
+        job_type: window._jobType || 'PPM',
+        company_name: 'GOW Systems',
         answers,
         pdf_base64: pdfBase64,
       }),
