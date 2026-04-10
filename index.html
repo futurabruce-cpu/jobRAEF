@@ -1305,6 +1305,39 @@ async function submitVocaToDashboard(pdfBase64) {
   }
 }
 
+function buildFollowUpPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const margin = 14, pageW = 210, contentW = pageW - margin*2;
+  let y = 14;
+  // Header
+  doc.setFillColor(55,65,81); doc.rect(0,0,pageW,18,'F');
+  doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('FOLLOW UP VISIT REQUIRED', pageW/2, 11, {align:'center'});
+  y = 24;
+  // Site info
+  doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
+  doc.text('Site: ' + (siteDetails.siteName||''), margin, y); y+=6;
+  doc.text('Address: ' + (siteDetails.address||''), margin, y); y+=6;
+  doc.text('Date: ' + (siteDetails.date ? new Date(siteDetails.date+'T00:00:00').toLocaleDateString('en-GB') : ''), margin, y); y+=6;
+  doc.text('Engineer: ' + (engineerUsername||''), margin, y); y+=10;
+  // Follow-up details
+  doc.setFillColor(240,240,240); doc.rect(margin, y-4, contentW, 8, 'F');
+  doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
+  doc.text('FOLLOW UP DETAILS', margin+2, y+1); y+=10;
+  const fqLabels = {cf1:'Work Needed', cf2:'Parts Required', cf3:'Hours Estimated'};
+  CALLOUT_FOLLOWUP_QUESTIONS.forEach(q => {
+    const val = answers[q.id];
+    if (!val) return;
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(80,80,80);
+    doc.text(fqLabels[q.id] || q.label, margin, y); y+=5;
+    doc.setFont('helvetica','normal'); doc.setTextColor(40,40,40);
+    const lines = doc.splitTextToSize(String(val), contentW);
+    doc.text(lines, margin, y); y += lines.length*5 + 4;
+  });
+  return doc;
+}
+
 async function submitFollowUpToDashboard() {
   if (!engineerEmail) return;
   try {
@@ -1329,6 +1362,17 @@ async function submitFollowUpToDashboard() {
     const data = await res.json();
     if (res.ok) {
       showToast('✅ Follow-up saved to dashboard!');
+      // Upload follow-up PDF
+      try {
+        const fuDoc = buildFollowUpPDF();
+        const fuBase64 = fuDoc.output('datauristring').split(',')[1];
+        await fetch(`${DASHBOARD_URL}/api/upload-pdf?key=${API_KEY}&table=follow_ups&id=${data.id}`, {
+          method: 'POST',
+          mode: 'cors',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ id: data.id, pdf_base64: fuBase64, table: 'follow_ups' }),
+        });
+      } catch(e) { console.warn('Follow-up PDF upload failed:', e); }
     } else {
       showToast('❌ Follow-up error: ' + (data.error || res.status), false);
     }
