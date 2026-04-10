@@ -1177,9 +1177,16 @@ async function buildPPMDoc() {
       doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(80,80,80);
       doc.text(q.label, margin, y); y+=5;
       for (const src of answers[q.id]) {
-        checkPage(55);
-        try { doc.addImage(src,'JPEG',margin,y,80,55); y+=60; }
-        catch(e) { doc.setFont('helvetica','italic'); doc.setTextColor(150,150,150); doc.text('[Photo could not be embedded]',margin,y); y+=8; }
+        checkPage(12);
+        if (src && src.startsWith('data:')) {
+          // Embedded data URL — add directly
+          try { doc.addImage(src,'JPEG',margin,y,80,55); y+=60; }
+          catch(e) { doc.setFontSize(8); doc.setFont('helvetica','italic'); doc.setTextColor(150,150,150); doc.text('[Photo attached]',margin,y); y+=8; }
+        } else {
+          // External URL — just note it
+          doc.setFontSize(8); doc.setFont('helvetica','italic'); doc.setTextColor(80,80,80);
+          doc.text('\ud83d\udcf7 Photo: ' + src, margin, y, { maxWidth: contentW }); y+=8;
+        }
       }
     }
   }
