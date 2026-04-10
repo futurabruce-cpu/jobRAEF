@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="JobRAEF" />
-  <title>JobRAEF</title>
+  <meta name="apple-mobile-web-app-title" content="Fire Alarm PPM" />
+  <title>Fire Alarm PPM</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
@@ -161,7 +161,7 @@
   <div class="header">
     <div class="header-icon">🔥</div>
     <div>
-      <h1>JobRAEF</h1>
+      <h1>Fire Alarm PPM</h1>
       <div class="header-sub">Fire PPM — Site Details</div>
     </div>
   </div>
@@ -234,7 +234,7 @@
   <div class="header">
     <div class="header-icon">🔥</div>
     <div>
-      <h1>JobRAEF</h1>
+      <h1>Fire Alarm PPM</h1>
       <div class="header-sub" id="header-site-name">PPM Checklist</div>
     </div>
   </div>
@@ -269,7 +269,7 @@
 
 <script>
 const { jsPDF } = window.jspdf;
-const DRAFT_KEY = 'JobRAEF_draft';
+const DRAFT_KEY = 'Fire Alarm PPM_draft';
 const DASHBOARD_URL = 'https://ppm-dashboard-ivory.vercel.app';
 const API_KEY = 'ppm_live_2026_secure_key';
 const SUPABASE_URL = 'https://bhsdzgshnegkqewgfgna.supabase.co';
@@ -1006,7 +1006,7 @@ function pdfFooter(doc, pageW, margin) {
   const n = doc.internal.getNumberOfPages();
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFontSize(8); doc.setTextColor(180,180,180); doc.setFont('helvetica','normal');
-    doc.text(`JobRAEF | Page ${i} of ${n}`, margin, 292);
+    doc.text(`Fire Alarm PPM | Page ${i} of ${n}`, margin, 292);
     doc.text(new Date().toLocaleDateString('en-GB'), pageW - margin, 292, { align: 'right' });
   }
 }
