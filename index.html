@@ -384,9 +384,18 @@ window.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem(DRAFT_KEY)) {
     document.getElementById('draft-bar-wrap').style.display = 'block';
   }
-  // Always show login screen on fresh load
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('site-screen').style.display = 'none';
+  // Auto-login if coming from job picker
+  const urlParams = new URLSearchParams(window.location.search);
+  const autoUser = urlParams.get('user');
+  if (autoUser) {
+    engineerEmail = autoUser;
+    engineerUsername = autoUser.split('@')[0];
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('site-screen').style.display = 'flex';
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('site-screen').style.display = 'none';
+  }
   // Logo upload handler
   let pendingLogo = null;
   document.getElementById('logo-input').addEventListener('change', function(e) {
