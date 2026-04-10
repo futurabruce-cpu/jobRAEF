@@ -832,7 +832,10 @@ function normalisePhoto(file, cb) {
 
 function showSummary() {
   clearDraft();
-  submitVocaToDashboard(null);
+  buildPPMDoc().then(doc => {
+    const pdfBase64 = doc.output('datauristring').split(',')[1];
+    submitVocaToDashboard(pdfBase64);
+  }).catch(() => submitVocaToDashboard(null));
   document.getElementById('app-screen').style.display = 'none';
   const sum = document.getElementById('summary-screen');
   sum.style.display = 'flex';
