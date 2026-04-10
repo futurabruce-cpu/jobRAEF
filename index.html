@@ -369,6 +369,24 @@ const BASE_QUESTIONS = [
   { id: 42, label: "Customer Signature",        text: "Customer name and signature to confirm the service visit.",                                                                                    type: "customer_sig" },
 ];
 
+const CALLOUT_QUESTIONS = [
+  { id: 'c1', label: 'Work Carried Out',              text: 'Describe the work carried out.',                          type: 'text' },
+  { id: 'c2', label: 'Picture',                       text: 'Take a photo of the system/work.',                        type: 'photo' },
+  { id: 'c3', label: 'Equipment Used',                text: 'What equipment was used on this visit?',                  type: 'text', placeholder: 'e.g. None, Multimeter, etc' },
+  { id: 'c4', label: 'Number of Engineers',           text: 'How many engineers attended this visit?',                 type: 'number', placeholder: 'e.g. 1' },
+  { id: 'c5', label: 'Quotation Works Required?',     text: 'Are there any quotation works required?',                 type: 'yn', triggersCalloutRemedial: true },
+  { id: 'c6', label: 'System Current Status',         text: 'What is the current status of the system?',              type: 'text', placeholder: 'e.g. Normal, Fault on zone 3...' },
+  { id: 'c7', label: 'Return Visit Required?',        text: 'Is a return visit required?',                             type: 'yn', triggersFollowup: true },
+  { id: 'c8', label: 'Engineer Sign Off',             text: 'Engineer signature.',                                     type: 'signature' },
+  { id: 'c9', label: 'Customer Sign Off',             text: 'Customer signature.',                                     type: 'customer_sig' },
+];
+
+const CALLOUT_FOLLOWUP_QUESTIONS = [
+  { id: 'cf1', label: 'Work Needed',     text: 'Describe the work needed on the return visit.',   type: 'text' },
+  { id: 'cf2', label: 'Parts Required',  text: 'List any parts required.',                        type: 'text' },
+  { id: 'cf3', label: 'Hours',           text: 'Estimated hours for the return visit.',           type: 'number', placeholder: 'e.g. 2' },
+];
+
 const REMEDIAL_QUESTIONS = [
   { id: 43, label: "Works Required",   text: "Describe the works required.",      type: "text",   remedial: true },
   { id: 44, label: "Parts Required",   text: "List any parts required.",          type: "text",   remedial: true },
@@ -380,6 +398,8 @@ let currentIndex = 0;
 let answers = {};
 let siteDetails = {};
 let remedialAdded = false;
+let followupAdded = false;
+let isCallout = false;
 let photoInputTarget = null;
 let sigDrawing = false;
 let sigContexts = {};
@@ -438,6 +458,21 @@ function addRemedialIfNeeded() {
   }
 }
 
+function addFollowupQuestionsIfNeeded() {
+  if (!followupAdded) {
+    followupAdded = true;
+    // Insert follow-up questions before Engineer Sign Off (c8)
+    const sigIdx = questions.findIndex(q => q.id === 'c8');
+    if (sigIdx > -1) {
+      questions = [
+        ...questions.slice(0, sigIdx),
+        ...CALLOUT_FOLLOWUP_QUESTIONS,
+        ...questions.slice(sigIdx),
+      ];
+    }
+  }
+}
+
 function saveDraft() {
   localStorage.setItem(DRAFT_KEY, JSON.stringify({ siteDetails, answers, currentIndex, remedialAdded }));
   alert('Draft saved! You can close the app and resume later.');
@@ -477,6 +512,11 @@ function startService() {
       logo:     window._getPendingLogo ? window._getPendingLogo() : null,
     };
     clearDraft();
+    // Set question set based on job type
+    isCallout = (window._jobType === 'Callout');
+    questions = isCallout ? [...CALLOUT_QUESTIONS] : [...BASE_QUESTIONS];
+    followupAdded = false;
+    remedialAdded = false;
     document.getElementById('site-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
     if (siteDetails.siteName) document.getElementById('header-site-name').textContent = siteDetails.siteName;
@@ -594,6 +634,7 @@ function renderQuestion() {
       answers[q.id] = val;
       if (commentsEl) answers[q.id + '_comments'] = commentsEl.value;
       if (q.triggersRemedial && val === 'Yes') addRemedialIfNeeded();
+      if (q.triggersFollowup && val === 'Yes') addFollowupQuestionsIfNeeded();
       // Q33 PAVA: if No, skip Q34, Q35, Q36
       if (q.id === 33 && val === 'No') {
         answers[34] = 'N/A'; answers[35] = 'N/A'; answers[36] = null;
@@ -1188,6 +1229,7 @@ async function submitVocaToDashboard(pdfBase64) {
         service_date: siteDetails.date || new Date().toISOString().split('T')[0],
         job_type: window._jobType || 'PPM',
         company_name: 'GOW Systems',
+        follow_up_required: followupAdded ? true : false,
         answers,
         pdf_base64: pdfBase64,
       }),
