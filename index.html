@@ -1304,7 +1304,8 @@ async function submitVocaToDashboard(pdfBase64) {
     const data = await res.json();
     if (res.ok) {
       lastSubmissionId = data.id;
-      showToast('✅ Sheet saved to dashboard!');
+      window._jobNumber = data.job_number || null;
+      showToast('✅ Sheet saved to dashboard!' + (data.job_number ? ' (' + data.job_number + ')' : ''));
     } else {
       showToast('❌ Dashboard error: ' + (data.error || res.status), false);
     }
@@ -1364,6 +1365,7 @@ async function submitFollowUpToDashboard() {
         service_date: siteDetails.date || new Date().toISOString().split('T')[0],
         job_type: window._jobType || 'Callout',
         company_name: window._companyName || 'GOW Systems',
+        job_number: window._jobNumber || null,
         answers: followupAnswers,
       }),
     });
