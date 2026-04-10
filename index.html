@@ -419,6 +419,10 @@ window.addEventListener('DOMContentLoaded', () => {
     engineerUsername = autoUser.split('@')[0];
     // Store job type for submission
     window._jobType = autoJobType === 'callout' ? 'Callout' : 'PPM';
+    isCallout = (window._jobType === 'Callout');
+    questions = isCallout ? [...CALLOUT_QUESTIONS] : [...BASE_QUESTIONS];
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.textContent = isCallout ? 'Start Job →' : 'Start Service →';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('site-screen').style.display = 'flex';
   } else {
