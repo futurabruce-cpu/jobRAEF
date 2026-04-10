@@ -225,7 +225,7 @@
     </div>
   </div>
   <div style="padding: 16px 20px 40px;">
-    <button class="next-btn" onclick="startService()">Start Service →</button>
+    <button class="next-btn" id="start-btn" onclick="startService()">Start Service →</button>
   </div>
 </div>
 
@@ -515,6 +515,9 @@ function startService() {
     // Set question set based on job type
     isCallout = (window._jobType === 'Callout');
     questions = isCallout ? [...CALLOUT_QUESTIONS] : [...BASE_QUESTIONS];
+    // Update button text
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.textContent = isCallout ? 'Start Job →' : 'Start Service →';
     followupAdded = false;
     remedialAdded = false;
     document.getElementById('site-screen').style.display = 'none';
@@ -808,7 +811,7 @@ function renderQuestion() {
   if (!['yn', 'yna', 'choice'].includes(q.type)) {
     const nextBtn = document.createElement('button');
     nextBtn.className = 'next-btn';
-    nextBtn.textContent = currentIndex === questions.length - 1 ? 'Complete Service ✓' : 'Next →';
+    nextBtn.textContent = currentIndex === questions.length - 1 ? (isCallout ? 'Complete Job ✓' : 'Complete Service ✓') : 'Next →';
     nextBtn.onclick = () => {
       if (inputEl) answers[q.id] = inputEl.value;
       if (q.type === 'photo' && !answers[q.id]) answers[q.id] = [];
