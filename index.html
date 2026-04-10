@@ -1227,7 +1227,9 @@ function showToast(msg, ok=true) {
   t.style.color = '#fff';
   t.textContent = msg;
   t.style.opacity = '1';
-  setTimeout(() => { t.style.opacity = '0'; }, 4000);
+  // Error messages stay longer
+  const duration = ok ? 4000 : 10000;
+  setTimeout(() => { t.style.opacity = '0'; }, duration);
 }
 
 async function submitVocaToDashboard(pdfBase64) {
