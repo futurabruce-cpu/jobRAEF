@@ -931,17 +931,7 @@ function showSummary() {
   // Submit record first, then upload PDF once we have the ID
   (async () => {
     await submitVocaToDashboard(null);
-    if (lastSubmissionId) {
-      showToast('⏳ Uploading PDF...');
-      try {
-        const doc = await buildPPMDoc();
-        await uploadPDFToDashboard(doc);
-        showToast('✅ PDF saved to dashboard!');
-      } catch(e) {
-        showToast('❌ PDF upload failed: ' + e.message, false);
-        console.warn('PDF upload failed:', e);
-      }
-    }
+    // PDF is generated server-side automatically — no upload needed from device
     if (followupAdded || answers['c7'] === 'Yes') submitFollowUpToDashboard();
   })();
   document.getElementById('app-screen').style.display = 'none';
@@ -1362,17 +1352,7 @@ async function submitFollowUpToDashboard() {
     const data = await res.json();
     if (res.ok) {
       showToast('✅ Follow-up saved to dashboard!');
-      // Upload follow-up PDF
-      try {
-        const fuDoc = buildFollowUpPDF();
-        const fuBase64 = fuDoc.output('datauristring').split(',')[1];
-        await fetch(`${DASHBOARD_URL}/api/upload-pdf?key=${API_KEY}&table=follow_ups&id=${data.id}`, {
-          method: 'POST',
-          mode: 'cors',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ id: data.id, pdf_base64: fuBase64, table: 'follow_ups' }),
-        });
-      } catch(e) { console.warn('Follow-up PDF upload failed:', e); }
+      // PDF generated server-side automatically
     } else {
       showToast('❌ Follow-up error: ' + (data.error || res.status), false);
     }
