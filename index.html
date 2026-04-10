@@ -428,7 +428,18 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('site-screen').style.display = 'none';
   }
-  // Logo — preload GOW logo as base64 so jsPDF can use it
+  // Detect company from URL param (e.g. ?company=ladrillos)
+  const _urlCompany = new URLSearchParams(window.location.search).get('company') || 'gow';
+  const _isLadrillos = (_urlCompany === 'ladrillos');
+  const _companyName = _isLadrillos ? 'Ladrillos' : 'GOW Systems';
+  const _logoFile = _isLadrillos ? 'ladrillos-logo.png' : 'gow-logo.webp';
+  // Pre-fill company field
+  window.addEventListener('DOMContentLoaded', () => {}, false);
+  const _sdCompany = document.getElementById('sd-company');
+  if (_sdCompany) _sdCompany.value = _companyName;
+  window._companyName = _companyName;
+
+  // Logo — preload correct logo as base64 so jsPDF can use it
   let pendingLogo = null;
   const _gowImg = new Image();
   _gowImg.crossOrigin = 'anonymous';
@@ -438,8 +449,15 @@ window.addEventListener('DOMContentLoaded', () => {
     canvas.getContext('2d').drawImage(_gowImg, 0, 0);
     pendingLogo = canvas.toDataURL('image/png');
     document.getElementById('logo-preview').src = pendingLogo;
+    // Update label if Ladrillos
+    if (_isLadrillos) {
+      const lbl = document.getElementById('logo-upload-label');
+      if (lbl) lbl.textContent = '📁 Upload different logo';
+      const def = document.querySelector('#logo-preview + div');
+      if (def) def.innerHTML = 'Ladrillos <span style="color:#16a34a;font-size:12px;">✓ Default</span>';
+    }
   };
-  _gowImg.src = 'gow-logo.webp';
+  _gowImg.src = _logoFile;
 
   document.getElementById('logo-input').addEventListener('change', function(e) {
     const file = e.target.files[0]; if (!file) return;
@@ -1277,7 +1295,7 @@ async function submitVocaToDashboard(pdfBase64) {
         site_address: siteDetails.address || '',
         service_date: siteDetails.date || new Date().toISOString().split('T')[0],
         job_type: window._jobType || 'PPM',
-        company_name: 'GOW Systems',
+        company_name: window._companyName || 'GOW Systems',
         follow_up_required: (followupAdded || answers['c7'] === 'Yes') ? true : false,
         answers,
         pdf_base64: null,
@@ -1345,7 +1363,7 @@ async function submitFollowUpToDashboard() {
         site_address: siteDetails.address || '',
         service_date: siteDetails.date || new Date().toISOString().split('T')[0],
         job_type: window._jobType || 'Callout',
-        company_name: 'GOW Systems',
+        company_name: window._companyName || 'GOW Systems',
         answers: followupAnswers,
       }),
     });
@@ -1454,7 +1472,7 @@ async function buildCalloutDoc() {
   const np = doc.internal.getNumberOfPages();
   for (let i=1; i<=np; i++) {
     doc.setPage(i); doc.setFontSize(7); doc.setTextColor(160,160,160); doc.setFont('helvetica','normal');
-    doc.text('GOW Systems | Page '+i+' of '+np, pageW/2, 293, {align:'center'});
+    doc.text((window._companyName||'GOW Systems')+' | Page '+i+' of '+np, pageW/2, 293, {align:'center'});
   }
   return doc;
 }
