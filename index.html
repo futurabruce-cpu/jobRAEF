@@ -1,4 +1,4 @@
-<!-- v2 -->
+<!-- v3 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -260,6 +260,7 @@ const BASE_QUESTIONS = [
   { id: 15, label: "Charge Voltage",            text: "Record the charge voltage (V).",                                                                                                              type: "number", placeholder: "e.g. 27.4" },
   { id: 16, label: "Battery Load Test",         text: "Have batteries been disconnected and a battery load test completed?\n\nRecord results in comments — standby batteries must provide minimum 24h standby + 30 min full alarm.",  type: "yn", comments: true },
   { id: 17, label: "Batteries >4 Years",        text: "Are there any batteries older than four years that require replacement?",                                                                       type: "yn" },
+  { id: 175, label: "Battery Calculation",       text: "Enter the battery values to calculate minimum battery capacity.",                                                                               type: "battery_calc" },
   { id: 18, label: "Call Point Switches",       text: "Has the switch mechanism of every manual call point been tested?",                                                                             type: "yn" },
   { id: 19, label: "Areas / Zones Tested",      text: "Which areas/zones have been tested?",                                                                                                         type: "text" },
   { id: 20, label: "Detectors Tested",          text: "What percentage of automatic fire detectors have been tested and checked for correct operation?",                                               type: "choice", options: ["25%", "50%", "100%"] },
@@ -527,6 +528,57 @@ function renderQuestion() {
     if (answers[q.id]) ta.value = answers[q.id];
     card.appendChild(ta); inputEl = ta;
 
+  // BATTERY CALC
+  } else if (q.type === 'battery_calc') {
+    const saved = answers[q.id] ? JSON.parse(answers[q.id]) : {};
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
+
+    const fields = [
+      { key: 'I1', label: 'I1 — Normal current draw (A)', placeholder: 'e.g. 0.35' },
+      { key: 'T1', label: 'T1 — Standby time (hours)', placeholder: 'e.g. 24' },
+      { key: 'I2', label: 'I2 — Alarm current draw (A)', placeholder: 'e.g. 1.2' },
+    ];
+    const inputs = {};
+    const resultBox = document.createElement('div');
+    resultBox.style.cssText = 'background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:14px 16px;font-size:15px;font-weight:800;color:#15803d;display:none;';
+
+    function calcCmin() {
+      const I1 = parseFloat(inputs.I1.value);
+      const T1 = parseFloat(inputs.T1.value);
+      const I2 = parseFloat(inputs.I2.value);
+      if (!isNaN(I1) && !isNaN(T1) && !isNaN(I2)) {
+        const cmin = ((I1 * T1) + I2) * 1.25;
+        resultBox.style.display = 'block';
+        resultBox.textContent = 'Cmin = [(I1×T1)+I2] × 1.25 = ' + cmin.toFixed(2) + ' Ah';
+        answers[q.id] = JSON.stringify({ I1, T1, I2, Cmin: cmin.toFixed(2) });
+      } else {
+        resultBox.style.display = 'none';
+      }
+    }
+
+    fields.forEach(({ key, label, placeholder }) => {
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:13px;font-weight:700;color:#555;margin-bottom:4px;';
+      lbl.textContent = label;
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.className = 'field-input';
+      inp.placeholder = placeholder; inp.inputMode = 'decimal';
+      inp.step = 'any';
+      if (saved[key] !== undefined) inp.value = saved[key];
+      inp.oninput = calcCmin;
+      inputs[key] = inp;
+      const fieldWrap = document.createElement('div');
+      fieldWrap.appendChild(lbl);
+      fieldWrap.appendChild(inp);
+      wrap.appendChild(fieldWrap);
+    });
+
+    wrap.appendChild(resultBox);
+    if (saved.I1 !== undefined) calcCmin();
+    card.appendChild(wrap);
+    inputEl = null; // no single inputEl — handled manually
+
   // NUMBER
   } else if (q.type === 'number') {
     const inp = document.createElement('input');
@@ -676,16 +728,28 @@ document.getElementById('photo-input').addEventListener('change', function(e) {
   const files = Array.from(e.target.files); if (!files.length) return;
   if (!answers[photoInputTarget]) answers[photoInputTarget] = [];
   const previews = document.getElementById('photo-previews-' + photoInputTarget);
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      answers[photoInputTarget].push(ev.target.result);
-      if (previews) { const img = document.createElement('img'); img.src = ev.target.result; img.className = 'photo-thumb'; previews.appendChild(img); }
-    };
-    reader.readAsDataURL(file);
-  });
+  files.forEach(file => normalisePhoto(file, dataUrl => {
+    answers[photoInputTarget].push(dataUrl);
+    if (previews) { const img = document.createElement('img'); img.src = dataUrl; img.className = 'photo-thumb'; previews.appendChild(img); }
+  }));
   this.value = '';
 });
+
+// Draws photo onto canvas so browser applies EXIF rotation, then returns corrected data URL
+function normalisePhoto(file, cb) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      cb(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
 function showSummary() {
   clearDraft();
@@ -880,7 +944,16 @@ async function buildPPMDoc() {
 
     // Answer (larger, bold, black)
     doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
-    const vl = doc.splitTextToSize(String(val), contentW);
+    let displayVal;
+    if (q.type === 'battery_calc') {
+      try {
+        const bc = JSON.parse(val);
+        displayVal = `I1=${bc.I1}A  T1=${bc.T1}h  I2=${bc.I2}A  →  Cmin = ${bc.Cmin} Ah`;
+      } catch(e) { displayVal = String(val); }
+    } else {
+      displayVal = String(val);
+    }
+    const vl = doc.splitTextToSize(displayVal, contentW);
     doc.text(vl, margin, y); y += vl.length * 6.5 + 2;
 
     // Comments
