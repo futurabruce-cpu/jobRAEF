@@ -869,15 +869,19 @@ async function buildPPMDoc() {
 
     checkPage(22);
 
-    // Question text (full, bold, dark)
+    // Grey box for question
+    const ql = doc.splitTextToSize(q.text.replace(/\n/g,' '), contentW - 6);
+    const qBoxH = ql.length * 5.5 + 5;
+    checkPage(qBoxH + 14);
+    doc.setFillColor(240, 240, 240);
+    doc.roundedRect(margin, y - 4, contentW, qBoxH, 2, 2, 'F');
     doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(55,65,81);
-    const ql = doc.splitTextToSize(q.text.replace(/\n/g,' '), contentW);
-    doc.text(ql, margin, y); y += ql.length * 5.5 + 2;
+    doc.text(ql, margin + 3, y + 1); y += qBoxH + 2;
 
     // Answer (larger, bold, black)
-    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+    doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
     const vl = doc.splitTextToSize(String(val), contentW);
-    doc.text(vl, margin, y); y += vl.length * 6 + 2;
+    doc.text(vl, margin, y); y += vl.length * 6.5 + 2;
 
     // Comments
     if (answers[q.id+'_comments']) {
@@ -886,8 +890,8 @@ async function buildPPMDoc() {
       doc.text(cl, margin, y); y += cl.length*5+2;
     }
 
-    // Divider between questions
-    doc.setDrawColor(230,230,230); doc.line(margin, y, margin+contentW, y); y += 5;
+    // Divider
+    doc.setDrawColor(220,220,220); doc.line(margin, y+2, margin+contentW, y+2); y += 8;
   }
 
   // Photos
