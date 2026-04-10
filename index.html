@@ -1226,8 +1226,10 @@ function showToast(msg, ok=true) {
 async function submitVocaToDashboard(pdfBase64) {
   if (!engineerEmail) { showToast('Not logged in — sheet not saved to dashboard', false); return; }
   try {
+    // Submit record first without PDF (avoids iOS body size limit)
     const res = await fetch(`${DASHBOARD_URL}/api/submissions`, {
       method: 'POST',
+      mode: 'cors',
       headers: {'Content-Type':'application/json','x-api-key':API_KEY},
       body: JSON.stringify({
         sheet_type: 'voca',
@@ -1239,7 +1241,7 @@ async function submitVocaToDashboard(pdfBase64) {
         company_name: 'GOW Systems',
         follow_up_required: followupAdded ? true : false,
         answers,
-        pdf_base64: pdfBase64,
+        pdf_base64: null,
       }),
     });
     const data = await res.json();
