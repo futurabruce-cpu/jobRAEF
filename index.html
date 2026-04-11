@@ -178,9 +178,10 @@
       <h2>Before you start</h2>
       <p>Enter the site details for this service visit.</p>
     </div>
-    <div class="field-group">
+    <div class="field-group" style="position:relative;">
       <label>Site / Customer Name</label>
-      <input class="field-input" id="sd-site-name" type="text" placeholder="e.g. Morrisons Wakefield" />
+      <input class="field-input" id="sd-site-name" type="text" placeholder="e.g. Morrisons Wakefield" autocomplete="off" />
+      <div id="site-autocomplete" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:2px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;z-index:50;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.10);"></div>
     </div>
     <div class="field-group">
       <label>Site Address</label>
@@ -540,6 +541,8 @@ function startService() {
       logo:     window._getPendingLogo ? window._getPendingLogo() : null,
     };
     clearDraft();
+    // Save site to database for future autocomplete
+    if (window._upsertSite) window._upsertSite(siteDetails.siteName, siteDetails.address);
     // Set question set based on job type
     isCallout = (window._jobType === 'Callout');
     questions = isCallout ? [...CALLOUT_QUESTIONS] : [...BASE_QUESTIONS];
@@ -1515,6 +1518,74 @@ async function emailPDF() {
   );
   setTimeout(() => { window.location.href = `mailto:?subject=${subject}&body=${body}`; }, 500);
 }
+
+// ── Site Autocomplete ─────────────────────────────────────────────────────────
+(function() {
+  let _acTimer = null;
+  const _input = document.getElementById('sd-site-name');
+  const _dropdown = document.getElementById('site-autocomplete');
+  const _address = document.getElementById('sd-address');
+
+  if (!_input || !_dropdown) return;
+
+  _input.addEventListener('input', function() {
+    clearTimeout(_acTimer);
+    const q = _input.value.trim();
+    if (q.length < 2) { _dropdown.style.display = 'none'; return; }
+    _acTimer = setTimeout(() => fetchSites(q), 250);
+  });
+
+  _input.addEventListener('blur', function() {
+    setTimeout(() => { _dropdown.style.display = 'none'; }, 200);
+  });
+
+  async function fetchSites(q) {
+    try {
+      const res = await fetch(`${DASHBOARD_URL}/api/sites?q=` + encodeURIComponent(q));
+      if (!res.ok) return;
+      const sites = await res.json();
+      renderDropdown(sites);
+    } catch(e) { /* silently fail */ }
+  }
+
+  function renderDropdown(sites) {
+    if (!sites || sites.length === 0) { _dropdown.style.display = 'none'; return; }
+    _dropdown.innerHTML = sites.map(s =>
+      `<div class="ac-item" data-name="${escHtml(s.name)}" data-address="${escHtml(s.address || '')}" ` +
+      `style="padding:12px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:15px;font-weight:700;">`+
+      `<div style="color:#111;">${escHtml(s.name)}</div>` +
+      (s.address ? `<div style="color:#888;font-size:12px;font-weight:500;margin-top:2px;">${escHtml(s.address)}</div>` : '') +
+      `</div>`
+    ).join('');
+    _dropdown.style.display = 'block';
+    _dropdown.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        _input.value = el.dataset.name;
+        if (_address && el.dataset.address) _address.value = el.dataset.address;
+        _dropdown.style.display = 'none';
+      });
+      el.addEventListener('mouseover', function() { el.style.background = '#FFF8E7'; });
+      el.addEventListener('mouseout', function() { el.style.background = ''; });
+    });
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Expose upsert function for use on submit
+  window._upsertSite = async function(name, address) {
+    if (!name || name.length < 2) return;
+    try {
+      await fetch(`${DASHBOARD_URL}/api/sites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+        body: JSON.stringify({ name, address: address || '' })
+      });
+    } catch(e) { /* silently fail — don't block submit */ }
+  };
+})();
 </script>
 </body>
 </html>
