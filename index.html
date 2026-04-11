@@ -428,11 +428,12 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('site-screen').style.display = 'none';
   }
-  // Detect company from URL param (e.g. ?company=ladrillos)
+  // Detect company from URL param (e.g. ?company=ladrillos or ?company=mswebb)
   const _urlCompany = new URLSearchParams(window.location.search).get('company') || 'gow';
   const _isLadrillos = (_urlCompany === 'ladrillos');
-  const _companyName = _isLadrillos ? 'Ladrillos' : 'GOW Systems';
-  const _logoFile = _isLadrillos ? 'ladrillos-logo.png' : 'gow-logo.webp';
+  const _isMSWebb = (_urlCompany === 'mswebb');
+  const _companyName = _isLadrillos ? 'Ladrillos' : _isMSWebb ? 'MS Webb' : 'GOW Systems';
+  const _logoFile = _isLadrillos ? 'ladrillos-logo.png' : _isMSWebb ? 'mswebb-logo.png' : 'gow-logo.webp';
   // Pre-fill company field
   window.addEventListener('DOMContentLoaded', () => {}, false);
   const _sdCompany = document.getElementById('sd-company');
@@ -449,12 +450,12 @@ window.addEventListener('DOMContentLoaded', () => {
     canvas.getContext('2d').drawImage(_gowImg, 0, 0);
     pendingLogo = canvas.toDataURL('image/png');
     document.getElementById('logo-preview').src = pendingLogo;
-    // Update label if Ladrillos
-    if (_isLadrillos) {
+    // Update label for non-GOW companies
+    if (_isLadrillos || _isMSWebb) {
       const lbl = document.getElementById('logo-upload-label');
       if (lbl) lbl.textContent = '📁 Upload different logo';
       const def = document.querySelector('#logo-preview + div');
-      if (def) def.innerHTML = 'Ladrillos <span style="color:#16a34a;font-size:12px;">✓ Default</span>';
+      if (def) def.innerHTML = _companyName + ' <span style="color:#16a34a;font-size:12px;">✓ Default</span>';
     }
   };
   _gowImg.src = _logoFile;
