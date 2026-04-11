@@ -423,8 +423,8 @@ window.addEventListener('DOMContentLoaded', () => {
     engineerEmail = autoUser;
     engineerUsername = autoUser.split('@')[0];
     // Store job type for submission
-    window._jobType = autoJobType === 'callout' ? 'Callout' : 'PPM';
-    isCallout = (window._jobType === 'Callout');
+    window._jobType = autoJobType === 'callout' ? 'Callout' : autoJobType === 'small_works' ? 'Small Works' : 'PPM';
+    isCallout = (window._jobType === 'Callout' || window._jobType === 'Small Works');
     questions = isCallout ? [...CALLOUT_QUESTIONS] : [...BASE_QUESTIONS];
     const startBtn = document.getElementById('start-btn');
     if (startBtn) startBtn.textContent = isCallout ? 'Start Job →' : 'Start Service →';
@@ -559,7 +559,7 @@ function startService() {
     // Save site to database for future autocomplete
     if (window._upsertSite) window._upsertSite(siteDetails.siteName, siteDetails.address);
     // Set question set based on job type
-    isCallout = (window._jobType === 'Callout');
+    isCallout = (window._jobType === 'Callout' || window._jobType === 'Small Works');
     questions = isCallout ? [...CALLOUT_QUESTIONS] : [...BASE_QUESTIONS];
     // Update button text
     const startBtn = document.getElementById('start-btn');
@@ -1437,7 +1437,8 @@ async function buildCalloutDoc() {
   const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
   const pageW = 210, margin = 14, contentW = pageW - margin * 2;
   const isGOW = (window._jobType === 'Callout');
-  let y = pdfHeader(doc, 'FIRE ALARM CALLOUT REPORT');
+  const _reportTitle = window._jobType === 'Small Works' ? 'FIRE ALARM SMALL WORKS REPORT' : 'FIRE ALARM CALLOUT REPORT';
+  let y = pdfHeader(doc, _reportTitle);
   y = pdfSiteBlock(doc, y, margin, contentW);
   y += 4;
 
