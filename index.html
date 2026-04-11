@@ -414,6 +414,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const autoUser = urlParams.get('user');
   const autoJobType = urlParams.get('jobtype') || 'ppm'; // 'ppm' or 'callout'
+  // Scheduled job params
+  const _scheduledJobId = urlParams.get('scheduled_job_id');
+  const _scheduledSiteName = urlParams.get('site_name');
+  const _scheduledSiteAddress = urlParams.get('site_address');
+  if (_scheduledJobId) window._scheduledJobId = _scheduledJobId;
   if (autoUser) {
     engineerEmail = autoUser;
     engineerUsername = autoUser.split('@')[0];
@@ -439,6 +444,16 @@ window.addEventListener('DOMContentLoaded', () => {
   window._companyName = _companyName;
   const _sdCompany = document.getElementById('sd-company');
   if (_sdCompany) _sdCompany.value = _companyName;
+
+  // Pre-fill site details from scheduled job URL params
+  if (_scheduledSiteName) {
+    const siteNameEl = document.getElementById('sd-site-name');
+    if (siteNameEl) siteNameEl.value = decodeURIComponent(_scheduledSiteName);
+  }
+  if (_scheduledSiteAddress) {
+    const siteAddrEl = document.getElementById('sd-address');
+    if (siteAddrEl) siteAddrEl.value = decodeURIComponent(_scheduledSiteAddress);
+  }
 
   // Update login screen branding
   const _loginLogo = document.getElementById('login-logo');
@@ -1315,6 +1330,15 @@ async function submitVocaToDashboard(pdfBase64) {
       lastSubmissionId = data.id;
       window._jobNumber = data.job_number || null;
       showToast('✅ Sheet saved to dashboard!' + (data.job_number ? ' (' + data.job_number + ')' : ''));
+      // Mark scheduled job complete if this was a scheduled job
+      if (window._scheduledJobId) {
+        fetch(`${DASHBOARD_URL}/api/scheduled-jobs/${window._scheduledJobId}/complete`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+          body: JSON.stringify({ submission_id: data.id || null })
+        }).catch(() => {});
+        window._scheduledJobId = null;
+      }
     } else {
       showToast('❌ Dashboard error: ' + (data.error || res.status), false);
     }
