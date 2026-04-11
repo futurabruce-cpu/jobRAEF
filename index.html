@@ -1132,7 +1132,7 @@ function pdfFooter(doc, pageW, margin) {
   const n = doc.internal.getNumberOfPages();
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFontSize(8); doc.setTextColor(180,180,180); doc.setFont('helvetica','normal');
-    doc.text(`Fire Alarm PPM | Page ${i} of ${n}`, margin, 292);
+    doc.text(`${window._companyName||'GOW Systems'} | Page ${i} of ${n}`, margin, 292);
     doc.text(new Date().toLocaleDateString('en-GB'), pageW - margin, 292, { align: 'right' });
   }
 }
