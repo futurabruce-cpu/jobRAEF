@@ -137,8 +137,8 @@
 <div id="login-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f3f4f6;">
   <div style="background:#fff;border-radius:24px;padding:48px 40px;width:100%;max-width:440px;box-shadow:0 8px 40px rgba(0,0,0,0.10);">
     <div style="text-align:center;margin-bottom:24px;">
-      <img src="gow-logo.webp" style="width:100px;height:100px;object-fit:contain;margin-bottom:16px;" />
-      <h1 style="font-size:28px;font-weight:900;color:#111;">Voca Fire PPM</h1>
+      <img id="login-logo" src="gow-logo.webp" style="width:100px;height:100px;object-fit:contain;margin-bottom:16px;" />
+      <h1 id="login-title" style="font-size:28px;font-weight:900;color:#111;">Voca Fire PPM</h1>
       <p style="color:#111;font-size:18px;font-weight:800;margin-top:8px;">Sign in to start a service sheet</p>
     </div>
     <div id="voca-login-error" style="display:none;background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:10px;padding:12px 16px;font-size:14px;margin-bottom:16px;"></div>
@@ -215,7 +215,7 @@
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
         <img id="logo-preview" src="gow-logo.webp" style="max-height:60px;max-width:160px;border-radius:8px;object-fit:contain;border:2px solid #e5e7eb;padding:4px;background:#fff;" />
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:6px;">GOW Systems <span style="color:#16a34a;font-size:12px;">✓ Default</span></div>
+          <div id="logo-default-label" style="font-size:13px;font-weight:700;color:#111;margin-bottom:6px;">GOW Systems <span style="color:#16a34a;font-size:12px;">✓ Default</span></div>
           <div class="logo-upload-btn" id="logo-upload-btn" onclick="document.getElementById('logo-input').click()" style="padding:10px 14px;font-size:13px;">
             <span id="logo-upload-label">📁 Upload different logo</span>
           </div>
@@ -434,11 +434,20 @@ window.addEventListener('DOMContentLoaded', () => {
   const _isMSWebb = (_urlCompany === 'mswebb');
   const _companyName = _isLadrillos ? 'Ladrillos' : _isMSWebb ? 'MS Webb' : 'GOW Systems';
   const _logoFile = _isLadrillos ? 'ladrillos-logo.png' : _isMSWebb ? 'mswebb-logo.png' : 'gow-logo.webp';
-  // Pre-fill company field
-  window.addEventListener('DOMContentLoaded', () => {}, false);
+  // Pre-fill company field and update all branding
+  window._companyName = _companyName;
   const _sdCompany = document.getElementById('sd-company');
   if (_sdCompany) _sdCompany.value = _companyName;
-  window._companyName = _companyName;
+
+  // Update login screen branding
+  const _loginLogo = document.getElementById('login-logo');
+  if (_loginLogo) _loginLogo.src = _logoFile;
+  const _loginTitle = document.getElementById('login-title');
+  if (_loginTitle) _loginTitle.textContent = _companyName + ' Fire PPM';
+
+  // Update logo default label on site details screen
+  const _logoDefaultLabel = document.getElementById('logo-default-label');
+  if (_logoDefaultLabel) _logoDefaultLabel.innerHTML = _companyName + ' <span style="color:#16a34a;font-size:12px;">✓ Default</span>';
 
   // Logo — preload correct logo as base64 so jsPDF can use it
   let pendingLogo = null;
@@ -450,13 +459,9 @@ window.addEventListener('DOMContentLoaded', () => {
     canvas.getContext('2d').drawImage(_gowImg, 0, 0);
     pendingLogo = canvas.toDataURL('image/png');
     document.getElementById('logo-preview').src = pendingLogo;
-    // Update label for non-GOW companies
-    if (_isLadrillos || _isMSWebb) {
-      const lbl = document.getElementById('logo-upload-label');
-      if (lbl) lbl.textContent = '📁 Upload different logo';
-      const def = document.querySelector('#logo-preview + div');
-      if (def) def.innerHTML = _companyName + ' <span style="color:#16a34a;font-size:12px;">✓ Default</span>';
-    }
+    if (_loginLogo) _loginLogo.src = pendingLogo;
+    const lbl = document.getElementById('logo-upload-label');
+    if (lbl) lbl.textContent = '📁 Upload different logo';
   };
   _gowImg.src = _logoFile;
 
