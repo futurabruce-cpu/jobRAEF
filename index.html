@@ -461,6 +461,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const _loginTitle = document.getElementById('login-title');
   if (_loginTitle) _loginTitle.textContent = _companyName + ' Fire PPM';
 
+  // Update app-screen header title based on company + job type
+  const _appHeaders = document.querySelectorAll('#app-screen h1, #site-screen h1');
+  const _headerJobType = isCallout ? 'Callout' : 'PPM';
+  _appHeaders.forEach(el => { el.textContent = _companyName + ' Fire ' + _headerJobType; });
+  const _headerSub = document.getElementById('header-site-name');
+  if (_headerSub) _headerSub.textContent = _headerJobType + ' Checklist';
+
   // Update logo default label on site details screen
   const _logoDefaultLabel = document.getElementById('logo-default-label');
   if (_logoDefaultLabel) _logoDefaultLabel.innerHTML = _companyName + ' <span style="color:#16a34a;font-size:12px;">✓ Default</span>';
